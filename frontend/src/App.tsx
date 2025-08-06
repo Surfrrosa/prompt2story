@@ -301,12 +301,12 @@ function App() {
               Input Text
             </CardTitle>
             <CardDescription className="text-gray-400">
-              Enter your unstructured requirements, ideas, or feature descriptions
+              Paste any unstructured input — feature ideas, meeting notes, or team conversations.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
-              placeholder="Example: We need a login system where users can sign up with email, reset passwords, and have different access levels..."
+              placeholder="Ex: We discussed in the meeting that users should get SMS alerts when their tasks are overdue. Also, marketing needs the dashboard export by Friday."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               className="min-h-32 bg-gray-700 border-gray-600 text-white placeholder-gray-400 resize-none"
