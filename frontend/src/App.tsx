@@ -35,6 +35,7 @@ function App() {
   const [includeMetadata, setIncludeMetadata] = useState(false)
   const [expandedMetadata, setExpandedMetadata] = useState<Set<number>>(new Set())
   const [feedbackStates, setFeedbackStates] = useState<Map<number, { rating: 'up' | 'down' | null, text: string, expanded: boolean, submitted: boolean }>>(new Map())
+  const [regeneratingStates, setRegeneratingStates] = useState<Set<number>>(new Set())
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -235,6 +236,56 @@ function App() {
     }
   }
 
+  const handleRegenerateStory = async (storyIndex: number) => {
+    if (!result || !inputText.trim()) return
+
+    const newRegeneratingStates = new Set(regeneratingStates)
+    newRegeneratingStates.add(storyIndex)
+    setRegeneratingStates(newRegeneratingStates)
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      const currentStory = result.user_stories[storyIndex]
+      
+      const response = await fetch(`${apiUrl}/regenerate-story`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          original_input: inputText,
+          current_story: currentStory,
+          include_metadata: includeMetadata
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Failed to regenerate story')
+      }
+
+      const regeneratedStory = await response.json()
+      
+      const updatedResult = { ...result }
+      updatedResult.user_stories = [...result.user_stories]
+      updatedResult.user_stories[storyIndex] = regeneratedStory
+      setResult(updatedResult)
+
+      const newFeedbackStates = new Map(feedbackStates)
+      newFeedbackStates.delete(storyIndex)
+      setFeedbackStates(newFeedbackStates)
+
+      setCopySuccess('Story regenerated successfully!')
+      setTimeout(() => setCopySuccess(null), 3000)
+    } catch (error) {
+      console.error('Story regeneration error:', error)
+      setCopySuccess('Failed to regenerate story')
+      setTimeout(() => setCopySuccess(null), 3000)
+    } finally {
+      const newRegeneratingStates = new Set(regeneratingStates)
+      newRegeneratingStates.delete(storyIndex)
+      setRegeneratingStates(newRegeneratingStates)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -413,6 +464,20 @@ function App() {
                             }`}
                           >
                             <ThumbsDown className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleRegenerateStory(index)}
+                            disabled={regeneratingStates.has(index)}
+                            className="px-3 py-2 rounded-lg text-sm transition-colors text-gray-400 hover:text-blue-400 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {regeneratingStates.has(index) ? (
+                              <>
+                                <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
+                                Regenerating...
+                              </>
+                            ) : (
+                              'Regenerate'
+                            )}
                           </button>
                         </div>
                         
