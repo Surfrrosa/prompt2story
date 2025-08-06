@@ -191,14 +191,22 @@ function App() {
   }
 
   const handleSubmitFeedback = async (storyIndex: number) => {
+    console.log('handleSubmitFeedback called with storyIndex:', storyIndex)
     const feedbackState = feedbackStates.get(storyIndex)
-    if (!feedbackState || !feedbackState.rating) return
+    console.log('feedbackState:', feedbackState)
+    
+    if (!feedbackState || !feedbackState.rating) {
+      console.log('No feedback state or rating, returning early')
+      return
+    }
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
       const story = result?.user_stories[storyIndex]
+      console.log('Submitting feedback to:', `${apiUrl}/submit-feedback`)
+      console.log('Story:', story)
       
-      await fetch(`${apiUrl}/submit-feedback`, {
+      const response = await fetch(`${apiUrl}/submit-feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -210,6 +218,10 @@ function App() {
         })
       })
 
+      console.log('Response status:', response.status)
+      const responseData = await response.json()
+      console.log('Response data:', responseData)
+
       const newStates = new Map(feedbackStates)
       newStates.set(storyIndex, { rating: null, text: '', expanded: false })
       setFeedbackStates(newStates)
@@ -217,6 +229,7 @@ function App() {
       setCopySuccess('Feedback submitted successfully!')
       setTimeout(() => setCopySuccess(null), 3000)
     } catch (error) {
+      console.error('Feedback submission error:', error)
       setCopySuccess('Failed to submit feedback')
       setTimeout(() => setCopySuccess(null), 3000)
     }
