@@ -34,7 +34,7 @@ function App() {
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
   const [includeMetadata, setIncludeMetadata] = useState(false)
   const [expandedMetadata, setExpandedMetadata] = useState<Set<number>>(new Set())
-  const [feedbackStates, setFeedbackStates] = useState<Map<number, { rating: 'up' | 'down' | null, text: string, expanded: boolean }>>(new Map())
+  const [feedbackStates, setFeedbackStates] = useState<Map<number, { rating: 'up' | 'down' | null, text: string, expanded: boolean, submitted: boolean }>>(new Map())
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -178,14 +178,14 @@ function App() {
 
   const handleFeedbackRating = (storyIndex: number, rating: 'up' | 'down') => {
     const newStates = new Map(feedbackStates)
-    const currentState = newStates.get(storyIndex) || { rating: null, text: '', expanded: false }
-    newStates.set(storyIndex, { ...currentState, rating, expanded: rating === 'down' })
+    const currentState = newStates.get(storyIndex) || { rating: null, text: '', expanded: false, submitted: false }
+    newStates.set(storyIndex, { ...currentState, rating, expanded: rating === 'down', submitted: false })
     setFeedbackStates(newStates)
   }
 
   const handleFeedbackTextChange = (storyIndex: number, text: string) => {
     const newStates = new Map(feedbackStates)
-    const currentState = newStates.get(storyIndex) || { rating: null, text: '', expanded: false }
+    const currentState = newStates.get(storyIndex) || { rating: null, text: '', expanded: false, submitted: false }
     newStates.set(storyIndex, { ...currentState, text })
     setFeedbackStates(newStates)
   }
@@ -223,7 +223,7 @@ function App() {
       console.log('Response data:', responseData)
 
       const newStates = new Map(feedbackStates)
-      newStates.set(storyIndex, { rating: null, text: '', expanded: false })
+      newStates.set(storyIndex, { rating: 'down', text: '', expanded: false, submitted: true })
       setFeedbackStates(newStates)
       
       setCopySuccess('Feedback submitted successfully!')
@@ -423,8 +423,15 @@ function App() {
                           </div>
                         )}
                         
+                        {/* Show thank you message for submitted thumbs down feedback */}
+                        {feedbackStates.get(index)?.rating === 'down' && feedbackStates.get(index)?.submitted && (
+                          <div className="text-sm text-green-400 animate-in slide-in-from-top-2 duration-200">
+                            Thanks for the feedback!
+                          </div>
+                        )}
+                        
                         {/* Show feedback form for thumbs down */}
-                        {feedbackStates.get(index)?.rating === 'down' && feedbackStates.get(index)?.expanded && (
+                        {feedbackStates.get(index)?.rating === 'down' && feedbackStates.get(index)?.expanded && !feedbackStates.get(index)?.submitted && (
                           <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
                             <div>
                               <label className="block text-sm text-gray-400 mb-2">
