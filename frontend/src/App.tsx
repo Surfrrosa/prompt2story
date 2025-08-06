@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, FileText, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download } from 'lucide-react'
 
 interface UserStory {
   title: string
@@ -21,6 +21,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<GenerationResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [copySuccess, setCopySuccess] = useState<string | null>(null)
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -31,6 +32,7 @@ function App() {
     setIsLoading(true)
     setError(null)
     setResult(null)
+    setCopySuccess(null)
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -54,6 +56,73 @@ function App() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const generateMarkdown = (data: GenerationResponse): string => {
+    let markdown = '# User Stories\n\n'
+    
+    data.user_stories.forEach((story, index) => {
+      markdown += `## ${index + 1}. ${story.title}\n\n`
+      markdown += `**User Story:** ${story.story}\n\n`
+      markdown += `**Acceptance Criteria:**\n`
+      story.acceptance_criteria.forEach(criteria => {
+        markdown += `- ${criteria}\n`
+      })
+      markdown += '\n'
+    })
+
+    if (data.edge_cases.length > 0) {
+      markdown += '# Edge Cases\n\n'
+      data.edge_cases.forEach((edgeCase, index) => {
+        markdown += `${index + 1}. ${edgeCase}\n`
+      })
+    }
+
+    return markdown
+  }
+
+  const handleCopyToClipboard = async () => {
+    if (!result) return
+
+    try {
+      const markdown = generateMarkdown(result)
+      await navigator.clipboard.writeText(markdown)
+      setCopySuccess('Copied to clipboard!')
+      setTimeout(() => setCopySuccess(null), 3000)
+    } catch (err) {
+      setCopySuccess('Failed to copy')
+      setTimeout(() => setCopySuccess(null), 3000)
+    }
+  }
+
+  const handleDownloadMarkdown = () => {
+    if (!result) return
+
+    const markdown = generateMarkdown(result)
+    const blob = new Blob([markdown], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'user-stories.md'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleDownloadJSON = () => {
+    if (!result) return
+
+    const jsonString = JSON.stringify(result, null, 2)
+    const blob = new Blob([jsonString], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'user-stories.json'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -164,6 +233,51 @@ function App() {
                 </Card>
               </div>
             )}
+
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Download className="h-5 w-5" />
+                  Export Options
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Export your generated user stories and edge cases
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={handleCopyToClipboard}
+                    variant="outline"
+                    className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-500"
+                  >
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy to Clipboard
+                  </Button>
+                  <Button
+                    onClick={handleDownloadMarkdown}
+                    variant="outline"
+                    className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-500"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download as Markdown
+                  </Button>
+                  <Button
+                    onClick={handleDownloadJSON}
+                    variant="outline"
+                    className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-500"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download as JSON
+                  </Button>
+                </div>
+                {copySuccess && (
+                  <div className="text-center text-green-400 text-sm">
+                    {copySuccess}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
