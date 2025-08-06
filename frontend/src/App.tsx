@@ -330,7 +330,7 @@ function App() {
             <Button 
               onClick={handleGenerate}
               disabled={isLoading || !inputText.trim()}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-150 ease-in-out"
             >
               {isLoading ? (
                 <>
@@ -358,13 +358,14 @@ function App() {
         {result && (
           <div className="space-y-6">
             <div>
+              <div className="border-t border-gray-600 pt-6 mb-6"></div>
               <h2 className="text-2xl font-semibold mb-4 text-white flex items-center gap-2">
                 <CheckCircle className="h-6 w-6 text-green-500" />
                 Generated User Stories
               </h2>
               <div className="space-y-4">
                 {result.user_stories.map((story, index) => (
-                  <Card key={index} className="bg-gray-800 border-gray-700">
+                  <Card key={index} className="bg-gray-800 border-gray-700 rounded-xl">
                     <CardHeader>
                       <CardTitle className="text-white">{story.title}</CardTitle>
                     </CardHeader>
@@ -392,9 +393,9 @@ function App() {
                             className="flex items-center gap-2 text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors"
                           >
                             {expandedMetadata.has(index) ? (
-                              <ChevronDown className="h-4 w-4" />
+                              <ChevronDown className="h-4 w-4 transition-transform duration-200" />
                             ) : (
-                              <ChevronRight className="h-4 w-4" />
+                              <ChevronRight className="h-4 w-4 transition-transform duration-200 rotate-0" />
                             )}
                             🧩 Metadata
                           </button>
@@ -447,7 +448,8 @@ function App() {
                         <div className="flex items-center gap-3 mb-3">
                           <button
                             onClick={() => handleFeedbackRating(index, 'up')}
-                            className={`p-2 rounded-lg transition-colors ${
+                            title="Like this output?"
+                            className={`p-2 rounded-lg transition-colors duration-150 ease-in-out ${
                               feedbackStates.get(index)?.rating === 'up'
                                 ? 'bg-green-600 text-white'
                                 : 'text-gray-400 hover:text-green-400 hover:bg-gray-700'
@@ -457,7 +459,8 @@ function App() {
                           </button>
                           <button
                             onClick={() => handleFeedbackRating(index, 'down')}
-                            className={`p-2 rounded-lg transition-colors ${
+                            title="Dislike this output?"
+                            className={`p-2 rounded-lg transition-colors duration-150 ease-in-out ${
                               feedbackStates.get(index)?.rating === 'down'
                                 ? 'bg-red-600 text-white'
                                 : 'text-gray-400 hover:text-red-400 hover:bg-gray-700'
@@ -468,7 +471,8 @@ function App() {
                           <button
                             onClick={() => handleRegenerateStory(index)}
                             disabled={regeneratingStates.has(index)}
-                            className="px-3 py-2 rounded-lg text-sm transition-colors text-gray-400 hover:text-blue-400 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Regenerate story"
+                            className="px-3 py-2 rounded-lg text-sm transition-colors duration-150 ease-in-out text-gray-400 hover:text-blue-400 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {regeneratingStates.has(index) ? (
                               <>
@@ -528,7 +532,7 @@ function App() {
             {result.edge_cases.length > 0 && (
               <div>
                 <h2 className="text-2xl font-semibold mb-4 text-white">Edge Cases</h2>
-                <Card className="bg-gray-800 border-gray-700">
+                <Card className="bg-gray-800 border-gray-700 rounded-xl">
                   <CardContent className="pt-6">
                     <div className="space-y-2">
                       {result.edge_cases.map((edgeCase, index) => (
@@ -545,7 +549,7 @@ function App() {
               </div>
             )}
 
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-gray-800 border-gray-700 rounded-xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Download className="h-5 w-5" />
