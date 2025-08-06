@@ -179,7 +179,7 @@ function App() {
   const handleFeedbackRating = (storyIndex: number, rating: 'up' | 'down') => {
     const newStates = new Map(feedbackStates)
     const currentState = newStates.get(storyIndex) || { rating: null, text: '', expanded: false }
-    newStates.set(storyIndex, { ...currentState, rating, expanded: true })
+    newStates.set(storyIndex, { ...currentState, rating, expanded: rating === 'down' })
     setFeedbackStates(newStates)
   }
 
@@ -416,7 +416,15 @@ function App() {
                           </button>
                         </div>
                         
-                        {feedbackStates.get(index)?.expanded && (
+                        {/* Show thank you message for thumbs up */}
+                        {feedbackStates.get(index)?.rating === 'up' && (
+                          <div className="text-sm text-green-400 animate-in slide-in-from-top-2 duration-200">
+                            Thanks! We're glad it was helpful.
+                          </div>
+                        )}
+                        
+                        {/* Show feedback form for thumbs down */}
+                        {feedbackStates.get(index)?.rating === 'down' && feedbackStates.get(index)?.expanded && (
                           <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
                             <div>
                               <label className="block text-sm text-gray-400 mb-2">
