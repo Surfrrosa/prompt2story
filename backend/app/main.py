@@ -47,6 +47,7 @@ class UserStory(BaseModel):
     title: str
     story: str
     acceptance_criteria: list[str]
+    tags: dict[str, str] = None
 
 class GenerationResponse(BaseModel):
     user_stories: list[UserStory]
