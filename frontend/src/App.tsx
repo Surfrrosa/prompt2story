@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings, ChevronDown, ChevronRight } from 'lucide-react'
+import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown } from 'lucide-react'
 
 interface Metadata {
   priority: 'Low' | 'Medium' | 'High'
@@ -34,6 +34,7 @@ function App() {
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
   const [includeMetadata, setIncludeMetadata] = useState(false)
   const [expandedMetadata, setExpandedMetadata] = useState<Set<number>>(new Set())
+  const [feedbackStates, setFeedbackStates] = useState<Map<number, { rating: 'up' | 'down' | null, text: string, expanded: boolean, submitted: boolean }>>(new Map())
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -173,6 +174,65 @@ function App() {
       newExpanded.add(index)
     }
     setExpandedMetadata(newExpanded)
+  }
+
+  const handleFeedbackRating = (storyIndex: number, rating: 'up' | 'down') => {
+    const newStates = new Map(feedbackStates)
+    const currentState = newStates.get(storyIndex) || { rating: null, text: '', expanded: false, submitted: false }
+    newStates.set(storyIndex, { ...currentState, rating, expanded: rating === 'down', submitted: false })
+    setFeedbackStates(newStates)
+  }
+
+  const handleFeedbackTextChange = (storyIndex: number, text: string) => {
+    const newStates = new Map(feedbackStates)
+    const currentState = newStates.get(storyIndex) || { rating: null, text: '', expanded: false, submitted: false }
+    newStates.set(storyIndex, { ...currentState, text })
+    setFeedbackStates(newStates)
+  }
+
+  const handleSubmitFeedback = async (storyIndex: number) => {
+    console.log('handleSubmitFeedback called with storyIndex:', storyIndex)
+    const feedbackState = feedbackStates.get(storyIndex)
+    console.log('feedbackState:', feedbackState)
+    
+    if (!feedbackState || !feedbackState.rating) {
+      console.log('No feedback state or rating, returning early')
+      return
+    }
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      const story = result?.user_stories[storyIndex]
+      console.log('Submitting feedback to:', `${apiUrl}/submit-feedback`)
+      console.log('Story:', story)
+      
+      const response = await fetch(`${apiUrl}/submit-feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rating: feedbackState.rating,
+          feedback_text: feedbackState.text,
+          story_title: story?.title,
+          story_content: story?.story,
+          timestamp: new Date().toISOString()
+        })
+      })
+
+      console.log('Response status:', response.status)
+      const responseData = await response.json()
+      console.log('Response data:', responseData)
+
+      const newStates = new Map(feedbackStates)
+      newStates.set(storyIndex, { rating: 'down', text: '', expanded: false, submitted: true })
+      setFeedbackStates(newStates)
+      
+      setCopySuccess('Feedback submitted successfully!')
+      setTimeout(() => setCopySuccess(null), 3000)
+    } catch (error) {
+      console.error('Feedback submission error:', error)
+      setCopySuccess('Failed to submit feedback')
+      setTimeout(() => setCopySuccess(null), 3000)
+    }
   }
 
   return (
@@ -331,6 +391,69 @@ function App() {
                           )}
                         </div>
                       )}
+                      
+                      <div className="border-t border-gray-600 pt-4 mt-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <button
+                            onClick={() => handleFeedbackRating(index, 'up')}
+                            className={`p-2 rounded-lg transition-colors ${
+                              feedbackStates.get(index)?.rating === 'up'
+                                ? 'bg-green-600 text-white'
+                                : 'text-gray-400 hover:text-green-400 hover:bg-gray-700'
+                            }`}
+                          >
+                            <ThumbsUp className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleFeedbackRating(index, 'down')}
+                            className={`p-2 rounded-lg transition-colors ${
+                              feedbackStates.get(index)?.rating === 'down'
+                                ? 'bg-red-600 text-white'
+                                : 'text-gray-400 hover:text-red-400 hover:bg-gray-700'
+                            }`}
+                          >
+                            <ThumbsDown className="h-4 w-4" />
+                          </button>
+                        </div>
+                        
+                        {/* Show thank you message for thumbs up */}
+                        {feedbackStates.get(index)?.rating === 'up' && (
+                          <div className="text-sm text-green-400 animate-in slide-in-from-top-2 duration-200">
+                            Thanks! We're glad it was helpful.
+                          </div>
+                        )}
+                        
+                        {/* Show thank you message for submitted thumbs down feedback */}
+                        {feedbackStates.get(index)?.rating === 'down' && feedbackStates.get(index)?.submitted && (
+                          <div className="text-sm text-green-400 animate-in slide-in-from-top-2 duration-200">
+                            Thanks for the feedback!
+                          </div>
+                        )}
+                        
+                        {/* Show feedback form for thumbs down */}
+                        {feedbackStates.get(index)?.rating === 'down' && feedbackStates.get(index)?.expanded && !feedbackStates.get(index)?.submitted && (
+                          <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
+                            <div>
+                              <label className="block text-sm text-gray-400 mb-2">
+                                What could be improved?
+                              </label>
+                              <Textarea
+                                value={feedbackStates.get(index)?.text || ''}
+                                onChange={(e) => handleFeedbackTextChange(index, e.target.value)}
+                                placeholder="Share your thoughts on how this user story could be better..."
+                                className="min-h-20 bg-gray-700 border-gray-600 text-white placeholder-gray-400 resize-none"
+                              />
+                            </div>
+                            <Button
+                              onClick={() => handleSubmitFeedback(index)}
+                              disabled={!feedbackStates.get(index)?.rating}
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              Submit Feedback
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
