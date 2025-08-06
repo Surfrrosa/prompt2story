@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Analytics } from '@vercel/analytics/react'
 
 interface Metadata {
   priority: 'Low' | 'Medium' | 'High'
@@ -596,6 +597,7 @@ function App() {
           </div>
         )}
       </div>
+      <Analytics />
     </div>
   )
 }
