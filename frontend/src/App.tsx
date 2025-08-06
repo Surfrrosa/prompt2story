@@ -3,12 +3,22 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download } from 'lucide-react'
+import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings, ChevronDown, ChevronRight } from 'lucide-react'
+
+interface Metadata {
+  priority: 'Low' | 'Medium' | 'High'
+  type: 'Feature' | 'Bug' | 'Chore' | 'Enhancement'
+  component: string
+  effort: string
+  persona: 'End User' | 'Admin' | 'Support Agent' | 'Engineer' | 'Designer' | 'QA' | 'Customer' | 'Other'
+  persona_other?: string
+}
 
 interface UserStory {
   title: string
   story: string
   acceptance_criteria: string[]
+  metadata?: Metadata
 }
 
 interface GenerationResponse {
@@ -22,6 +32,8 @@ function App() {
   const [result, setResult] = useState<GenerationResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
+  const [includeMetadata, setIncludeMetadata] = useState(false)
+  const [expandedMetadata, setExpandedMetadata] = useState<Set<number>>(new Set())
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -41,7 +53,10 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text: inputText }),
+        body: JSON.stringify({ 
+          text: inputText,
+          include_metadata: includeMetadata 
+        }),
       })
 
       if (!response.ok) {
@@ -50,6 +65,11 @@ function App() {
       }
 
       const data: GenerationResponse = await response.json()
+      console.log('API Response:', data)
+      console.log('Include Metadata:', includeMetadata)
+      if (data.user_stories && data.user_stories.length > 0) {
+        console.log('First story metadata:', data.user_stories[0].metadata)
+      }
       setResult(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
@@ -68,6 +88,17 @@ function App() {
       story.acceptance_criteria.forEach(criteria => {
         markdown += `- ${criteria}\n`
       })
+      
+      if (includeMetadata && story.metadata) {
+        markdown += '\n<details><summary>🧩 Metadata</summary>\n\n'
+        markdown += `- Priority: ${story.metadata.priority}\n`
+        markdown += `- Type: ${story.metadata.type}\n`
+        markdown += `- Component: ${story.metadata.component}\n`
+        markdown += `- Effort: ${story.metadata.effort}\n`
+        markdown += `- Persona: ${story.metadata.persona === 'Other' && story.metadata.persona_other ? story.metadata.persona_other : story.metadata.persona}\n`
+        markdown += '\n</details>\n'
+      }
+      
       markdown += '\n'
     })
 
@@ -113,7 +144,16 @@ function App() {
   const handleDownloadJSON = () => {
     if (!result) return
 
-    const jsonString = JSON.stringify(result, null, 2)
+    const exportData = includeMetadata ? result : {
+      user_stories: result.user_stories.map(story => ({
+        title: story.title,
+        story: story.story,
+        acceptance_criteria: story.acceptance_criteria
+      })),
+      edge_cases: result.edge_cases
+    }
+
+    const jsonString = JSON.stringify(exportData, null, 2)
     const blob = new Blob([jsonString], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -123,6 +163,16 @@ function App() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  const toggleMetadataExpansion = (index: number) => {
+    const newExpanded = new Set(expandedMetadata)
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index)
+    } else {
+      newExpanded.add(index)
+    }
+    setExpandedMetadata(newExpanded)
   }
 
   return (
@@ -151,6 +201,21 @@ function App() {
               className="min-h-32 bg-gray-700 border-gray-600 text-white placeholder-gray-400 resize-none"
               disabled={isLoading}
             />
+            
+            <div className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
+              <Settings className="h-4 w-4 text-gray-400" />
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeMetadata}
+                  onChange={(e) => setIncludeMetadata(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                  disabled={isLoading}
+                />
+                <span className="text-sm text-gray-300">Add Suggested Metadata</span>
+              </label>
+            </div>
+            
             <Button 
               onClick={handleGenerate}
               disabled={isLoading || !inputText.trim()}
@@ -208,6 +273,64 @@ function App() {
                           ))}
                         </ul>
                       </div>
+                      
+                      {includeMetadata && story.metadata && (
+                        <div className="border-t border-gray-600 pt-4">
+                          <button
+                            onClick={() => toggleMetadataExpansion(index)}
+                            className="flex items-center gap-2 text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors"
+                          >
+                            {expandedMetadata.has(index) ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                            🧩 Metadata
+                          </button>
+                          
+                          {expandedMetadata.has(index) && (
+                            <div className="mt-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Priority:</span>
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`${
+                                      story.metadata.priority === 'High' ? 'border-red-500 text-red-400' :
+                                      story.metadata.priority === 'Medium' ? 'border-yellow-500 text-yellow-400' :
+                                      'border-green-500 text-green-400'
+                                    }`}
+                                  >
+                                    {story.metadata.priority}
+                                  </Badge>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Type:</span>
+                                  <Badge variant="outline" className="border-blue-500 text-blue-400">
+                                    {story.metadata.type}
+                                  </Badge>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Component:</span>
+                                  <span className="text-gray-300">{story.metadata.component}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">Effort:</span>
+                                  <span className="text-gray-300">{story.metadata.effort}</span>
+                                </div>
+                                <div className="flex justify-between sm:col-span-2">
+                                  <span className="text-gray-400">Persona:</span>
+                                  <span className="text-gray-300">
+                                    {story.metadata.persona === 'Other' && story.metadata.persona_other 
+                                      ? story.metadata.persona_other 
+                                      : story.metadata.persona}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
