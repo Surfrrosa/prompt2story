@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown, Mail, X, Upload, Image } from 'lucide-react'
+import { TypeAnimation } from 'react-type-animation'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 
@@ -499,7 +500,24 @@ function App() {
     <div className="min-h-screen bg-gray-900 text-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2 text-white">AI User Story Generator</h1>
+          <h1 className="text-4xl font-bold mb-2 text-white" aria-label="AI User Story Generator">
+            <TypeAnimation
+              sequence={[
+                'AI User Story Generator',
+                3000,
+                'Built for Agile Teams',
+                3500,
+                'Turn Chaos Into Clarity',
+                4000,
+              ]}
+              wrapper="span"
+              speed={25}
+              style={{ display: 'inline-block' }}
+              repeat={0}
+              cursor={true}
+            />
+            <noscript>AI User Story Generator</noscript>
+          </h1>
           <p className="text-gray-400">Transform meeting notes and requirements into structured user stories with AI. The perfect product manager tool for agile teams.</p>
         </div>
 
