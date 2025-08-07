@@ -52,6 +52,14 @@ function App() {
   const [isProcessingFile, setIsProcessingFile] = useState(false)
   const [filePreview, setFilePreview] = useState<string | null>(null)
   const [inputMode, setInputMode] = useState<'text' | 'design'>('text')
+  const [processingMessage, setProcessingMessage] = useState(0)
+  const processingMessages = [
+    "Turning chaos into clarity…",
+    "Hunting for user stories…", 
+    "Refining requirements like a boss…",
+    "Analyzing design patterns…",
+    "Extracting user insights…"
+  ]
   const [isDragOver, setIsDragOver] = useState(false)
   const [dragCounter, setDragCounter] = useState(0)
 
@@ -383,6 +391,18 @@ function App() {
     }
   }, [showExportModal])
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (isProcessingFile) {
+      interval = setInterval(() => {
+        setProcessingMessage(prev => (prev + 1) % processingMessages.length)
+      }, 2000)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isProcessingFile, processingMessages.length])
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -697,7 +717,7 @@ function App() {
                       onDrop={handleDrop}
                       className={`relative w-full min-h-[200px] border-2 border-dashed rounded-xl transition-all duration-300 ease-in-out cursor-pointer group ${
                         isDragOver
-                          ? 'border-purple-400 bg-purple-500/10 scale-[1.02]'
+                          ? 'border-vivid-purple bg-vivid-purple/10 scale-[1.02]'
                           : 'border-charcoal-light bg-charcoal-lighter/50 hover:border-soft-gray hover:bg-charcoal-lighter/70'
                       } ${isProcessingFile ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
@@ -718,13 +738,13 @@ function App() {
                         
                         <div className="space-y-2">
                           <p className={`text-lg font-medium transition-colors duration-300 ${
-                            isDragOver ? 'text-blue-300' : 'text-soft-gray group-hover:text-pure-white'
+                            isDragOver ? 'text-pure-white' : 'text-soft-gray group-hover:text-pure-white'
                           }`}>
                             {isDragOver ? 'Drop your design file here' : 'Drag & drop your design file'}
                           </p>
                           
                           <p className="text-sm text-soft-gray">
-                            or <span className="text-purple-400 font-medium">click to browse</span>
+                            or <span className="text-vivid-purple font-medium hover:text-vivid-purple cursor-pointer">click to browse</span>
                           </p>
                           
                           <div className="flex items-center justify-center space-x-4 mt-4">
@@ -741,10 +761,16 @@ function App() {
                         </div>
                         
                         {isProcessingFile && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-deep-charcoal/80 rounded-xl">
-                            <div className="flex items-center space-x-3 text-purple-400">
-                              <Loader2 className="w-6 h-6 animate-spin" />
-                              <span className="text-sm font-medium">Processing file...</span>
+                          <div className="absolute inset-0 flex items-center justify-center bg-deep-charcoal/70 rounded-xl backdrop-blur-sm">
+                            <div className="flex flex-col items-center space-y-4 text-center">
+                              <div className="flex space-x-1">
+                                <div className="w-2 h-2 bg-vivid-purple rounded-full pulse-dot"></div>
+                                <div className="w-2 h-2 bg-vivid-purple rounded-full pulse-dot"></div>
+                                <div className="w-2 h-2 bg-vivid-purple rounded-full pulse-dot"></div>
+                              </div>
+                              <span className="text-sm font-medium text-pure-white">
+                                {processingMessages[processingMessage]}
+                              </span>
                             </div>
                           </div>
                         )}
