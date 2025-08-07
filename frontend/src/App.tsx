@@ -43,6 +43,7 @@ function App() {
   const [emailSignupSuccess, setEmailSignupSuccess] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [pendingExportAction, setPendingExportAction] = useState<(() => void) | null>(null)
+  const [emailSignupDismissed, setEmailSignupDismissed] = useState(false)
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -306,8 +307,22 @@ function App() {
     
     setTimeout(() => {
       setEmailSignupSuccess(false)
-    }, 3000)
+      setEmailSignupDismissed(true)
+      localStorage.setItem('emailSignupDismissed', 'true')
+    }, 2000) // Wait 2 seconds to show success message
   }
+
+  const handleDismissEmailSignup = () => {
+    setEmailSignupDismissed(true)
+    localStorage.setItem('emailSignupDismissed', 'true')
+  }
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem('emailSignupDismissed')
+    if (dismissed === 'true') {
+      setEmailSignupDismissed(true)
+    }
+  }, [])
 
   const handleExportWithModal = (exportAction: () => void) => {
     setPendingExportAction(() => exportAction)
@@ -364,37 +379,46 @@ function App() {
         </div>
 
         {/* Email Signup Form */}
-        <Card className="bg-gray-800 border-gray-700 mb-8">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-gray-300 mb-4">
-                <strong>Get notified when we launch advanced features — no spam, ever.</strong>
-              </p>
-              {emailSignupSuccess ? (
-                <div className="text-green-400 font-medium animate-in slide-in-from-top-2 duration-200">
-                  Thanks — you're in!
-                </div>
-              ) : (
-                <form onSubmit={handleEmailSignup} className="flex gap-3 max-w-md mx-auto">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Your email here"
-                    className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                  <Button 
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6"
-                  >
-                    Submit
-                  </Button>
-                </form>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {!emailSignupDismissed && (
+          <Card className="bg-gray-800 border-gray-700 mb-8 animate-in slide-in-from-top-2 duration-300">
+            <CardContent className="pt-6 relative">
+              <button
+                onClick={handleDismissEmailSignup}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 transition-colors duration-150"
+                aria-label="Dismiss email signup"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="text-center">
+                <p className="text-gray-300 mb-4">
+                  <strong>Get notified when we launch advanced features — no spam, ever.</strong>
+                </p>
+                {emailSignupSuccess ? (
+                  <div className="text-green-400 font-medium animate-in slide-in-from-top-2 duration-200">
+                    Thanks — you're in!
+                  </div>
+                ) : (
+                  <form onSubmit={handleEmailSignup} className="flex gap-3 max-w-md mx-auto">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Your email here"
+                      className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                    <Button 
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+                    >
+                      Submit
+                    </Button>
+                  </form>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="bg-gray-800 border-gray-700 mb-8">
           <CardHeader>
