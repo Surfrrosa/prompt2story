@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown, Mail, X } from 'lucide-react'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 
@@ -38,6 +38,11 @@ function App() {
   const [expandedMetadata, setExpandedMetadata] = useState<Set<number>>(new Set())
   const [feedbackStates, setFeedbackStates] = useState<Map<number, { rating: 'up' | 'down' | null, text: string, expanded: boolean, submitted: boolean }>>(new Map())
   const [regeneratingStates, setRegeneratingStates] = useState<Set<number>>(new Set())
+  
+  const [email, setEmail] = useState('')
+  const [emailSignupSuccess, setEmailSignupSuccess] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [pendingExportAction, setPendingExportAction] = useState<(() => void) | null>(null)
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -288,6 +293,49 @@ function App() {
     }
   }
 
+  const handleEmailSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    
+    if (!emailRegex.test(email)) {
+      return
+    }
+    
+    setEmailSignupSuccess(true)
+    setEmail('')
+    
+    setTimeout(() => {
+      setEmailSignupSuccess(false)
+    }, 3000)
+  }
+
+  const handleExportWithModal = (exportAction: () => void) => {
+    setPendingExportAction(() => exportAction)
+    setShowExportModal(true)
+  }
+
+  const handleExportConfirm = (withEmail: boolean) => {
+    if (withEmail && email) {
+      console.log('Sending export to:', email)
+    }
+    
+    if (pendingExportAction) {
+      pendingExportAction()
+    }
+    
+    setShowExportModal(false)
+    setPendingExportAction(null)
+  }
+
+  const handleExportDecline = () => {
+    if (pendingExportAction) {
+      pendingExportAction()
+    }
+    
+    setShowExportModal(false)
+    setPendingExportAction(null)
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -295,6 +343,39 @@ function App() {
           <h1 className="text-4xl font-bold mb-2 text-white">AI User Story Generator</h1>
           <p className="text-gray-400">Transform meeting notes and requirements into structured user stories with AI. The perfect product manager tool for agile teams.</p>
         </div>
+
+        {/* Email Signup Form */}
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-gray-300 mb-4">
+                <strong>Get notified when we launch advanced features — no spam, ever.</strong>
+              </p>
+              {emailSignupSuccess ? (
+                <div className="text-green-400 font-medium animate-in slide-in-from-top-2 duration-200">
+                  Thanks — you're in!
+                </div>
+              ) : (
+                <form onSubmit={handleEmailSignup} className="flex gap-3 max-w-md mx-auto">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Your email here"
+                    className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                  <Button 
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+                  >
+                    Submit
+                  </Button>
+                </form>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="bg-gray-800 border-gray-700 mb-8">
           <CardHeader>
@@ -564,7 +645,7 @@ function App() {
               <CardContent className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
-                    onClick={handleCopyToClipboard}
+                    onClick={() => handleExportWithModal(handleCopyToClipboard)}
                     variant="outline"
                     className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-500"
                   >
@@ -572,7 +653,7 @@ function App() {
                     Copy to Clipboard
                   </Button>
                   <Button
-                    onClick={handleDownloadMarkdown}
+                    onClick={() => handleExportWithModal(handleDownloadMarkdown)}
                     variant="outline"
                     className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-500"
                   >
@@ -580,7 +661,7 @@ function App() {
                     Download as Markdown
                   </Button>
                   <Button
-                    onClick={handleDownloadJSON}
+                    onClick={() => handleExportWithModal(handleDownloadJSON)}
                     variant="outline"
                     className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-500"
                   >
@@ -595,6 +676,61 @@ function App() {
                 )}
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Export Modal */}
+        {showExportModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-800 border border-gray-700 rounded-xl max-w-md w-full p-6 relative">
+              <button
+                onClick={handleExportDecline}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              
+              <div className="text-center space-y-4">
+                <div className="flex items-center justify-center mb-4">
+                  <Mail className="h-8 w-8 text-blue-400" />
+                </div>
+                
+                <h3 className="text-xl font-semibold text-white">
+                  Want it emailed to you + new features as they launch?
+                </h3>
+                
+                <div className="space-y-3">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Your email here"
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => handleExportConfirm(true)}
+                      disabled={!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Yes, send it to me
+                    </Button>
+                    <Button
+                      onClick={handleExportDecline}
+                      variant="outline"
+                      className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-500"
+                    >
+                      No thanks
+                    </Button>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-gray-400">
+                  Low-friction opt-in • No spam, ever
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </div>
