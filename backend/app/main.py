@@ -44,6 +44,9 @@ Return a JSON object with this structure:
 class TextInput(BaseModel):
     text: str
     include_metadata: bool = False
+    infer_edge_cases: bool = True
+    include_advanced_criteria: bool = True
+    expand_all_components: bool = True
 
 class UserStory(BaseModel):
     title: str
@@ -70,16 +73,25 @@ async def generate_user_stories(input_data: TextInput):
         if input_data.include_metadata:
             prompt_template += "\n\nIMPORTANT: Include detailed metadata tags in your response with priority, type, component, effort, and persona fields for each user story."
         
+        if input_data.infer_edge_cases:
+            prompt_template += "\n\nEDGE CASES: Infer and include comprehensive edge cases, boundary conditions, and error scenarios for each user story."
+        
+        if input_data.include_advanced_criteria:
+            prompt_template += "\n\nADVANCED CRITERIA: Generate 5-7 detailed acceptance criteria per story covering normal flow, error handling, edge cases, different states, accessibility, and performance considerations."
+        
+        if input_data.expand_all_components:
+            prompt_template += "\n\nCOMPREHENSIVE ANALYSIS: Scan and analyze ALL mentioned components, features, and requirements. Do not limit analysis arbitrarily - be thorough and complete."
+        
         full_prompt = f"{prompt_template}\n\nUnstructured text to analyze:\n{input_data.text}"
         
         response = openai_client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are an expert product manager and business analyst."},
+                {"role": "system", "content": "You are a senior Product Owner and business analyst. Be thorough and comprehensive in your analysis."},
                 {"role": "user", "content": full_prompt}
             ],
             temperature=0.7,
-            max_tokens=2000
+            max_tokens=4000
         )
         
         content = response.choices[0].message.content
@@ -119,7 +131,13 @@ def load_design_prompt():
         return """Analyze this design mockup and generate user stories based on the UI elements you can identify. Focus on interactive elements like buttons, forms, navigation, and user workflows."""
 
 @app.post("/analyze-design", response_model=GenerationResponse)
-async def analyze_design(file: UploadFile = File(...), include_metadata: bool = False):
+async def analyze_design(
+    file: UploadFile = File(...), 
+    include_metadata: bool = False,
+    infer_edge_cases: bool = True,
+    include_advanced_criteria: bool = True,
+    expand_all_components: bool = True
+):
     try:
         if not file.content_type or not file.content_type.startswith(('image/', 'application/pdf')):
             raise HTTPException(status_code=400, detail="Only image files (PNG, JPG) and PDF files are supported")
@@ -135,10 +153,19 @@ async def analyze_design(file: UploadFile = File(...), include_metadata: bool = 
         if include_metadata:
             prompt_template += "\n\nIMPORTANT: Include detailed metadata tags in your response with priority, type, component, effort, and persona fields for each user story."
         
+        if infer_edge_cases:
+            prompt_template += "\n\nEDGE CASES: Infer and include comprehensive edge cases, boundary conditions, and error scenarios for each UI element and interaction."
+        
+        if include_advanced_criteria:
+            prompt_template += "\n\nADVANCED CRITERIA: Generate 5-7 detailed acceptance criteria per story covering normal flow, error handling, edge cases, responsive behavior, accessibility, and interaction states."
+        
+        if expand_all_components:
+            prompt_template += "\n\nCOMPREHENSIVE UI ANALYSIS: Systematically scan and analyze ALL visible UI components, interactive elements, and interface areas. Do not limit analysis arbitrarily - be thorough and complete."
+        
         response = openai_client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are an expert product manager and UX analyst."},
+                {"role": "system", "content": "You are a senior Product Owner and UX analyst. Be thorough and comprehensive in your design analysis."},
                 {
                     "role": "user", 
                     "content": [
@@ -153,7 +180,7 @@ async def analyze_design(file: UploadFile = File(...), include_metadata: bool = 
                 }
             ],
             temperature=0.7,
-            max_tokens=2000
+            max_tokens=4000
         )
         
         content = response.choices[0].message.content

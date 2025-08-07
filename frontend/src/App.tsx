@@ -35,6 +35,9 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
   const [includeMetadata, setIncludeMetadata] = useState(false)
+  const [inferEdgeCases, setInferEdgeCases] = useState(true)
+  const [includeAdvancedCriteria, setIncludeAdvancedCriteria] = useState(true)
+  const [expandAllComponents, setExpandAllComponents] = useState(true)
   const [expandedMetadata, setExpandedMetadata] = useState<Set<number>>(new Set())
   const [feedbackStates, setFeedbackStates] = useState<Map<number, { rating: 'up' | 'down' | null, text: string, expanded: boolean, submitted: boolean }>>(new Map())
   const [regeneratingStates, setRegeneratingStates] = useState<Set<number>>(new Set())
@@ -69,7 +72,10 @@ function App() {
         },
         body: JSON.stringify({ 
           text: inputText,
-          include_metadata: includeMetadata 
+          include_metadata: includeMetadata,
+          infer_edge_cases: inferEdgeCases,
+          include_advanced_criteria: includeAdvancedCriteria,
+          expand_all_components: expandAllComponents
         }),
       })
 
@@ -418,6 +424,9 @@ function App() {
       const formData = new FormData()
       formData.append('file', uploadedFile)
       formData.append('include_metadata', includeMetadata.toString())
+      formData.append('infer_edge_cases', inferEdgeCases.toString())
+      formData.append('include_advanced_criteria', includeAdvancedCriteria.toString())
+      formData.append('expand_all_components', expandAllComponents.toString())
 
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
       const response = await fetch(`${apiUrl}/analyze-design`, {
@@ -542,18 +551,60 @@ function App() {
                   disabled={isLoading}
                 />
                 
-                <div className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
-                  <Settings className="h-4 w-4 text-gray-400" />
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={includeMetadata}
-                      onChange={(e) => setIncludeMetadata(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
-                      disabled={isLoading}
-                    />
-                    <span className="text-sm text-gray-300">Add Suggested Metadata</span>
-                  </label>
+                <div className="space-y-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
+                  <div className="flex items-center space-x-3">
+                    <Settings className="h-4 w-4 text-gray-400" />
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeMetadata}
+                        onChange={(e) => setIncludeMetadata(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                        disabled={isLoading}
+                      />
+                      <span className="text-sm text-gray-300">Add Suggested Metadata</span>
+                    </label>
+                  </div>
+                  
+                  <details className="group">
+                    <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-300 flex items-center space-x-1">
+                      <Settings className="h-4 w-4" />
+                      <span>Advanced Options</span>
+                      <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
+                    </summary>
+                    <div className="mt-2 ml-5 space-y-2 border-l border-gray-700 pl-3">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={inferEdgeCases}
+                          onChange={(e) => setInferEdgeCases(e.target.checked)}
+                          className="w-3 h-3 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                          disabled={isLoading}
+                        />
+                        <span className="text-xs text-gray-400">Infer edge cases</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={includeAdvancedCriteria}
+                          onChange={(e) => setIncludeAdvancedCriteria(e.target.checked)}
+                          className="w-3 h-3 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                          disabled={isLoading}
+                        />
+                        <span className="text-xs text-gray-400">Include advanced acceptance criteria</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={expandAllComponents}
+                          onChange={(e) => setExpandAllComponents(e.target.checked)}
+                          className="w-3 h-3 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                          disabled={isLoading}
+                        />
+                        <span className="text-xs text-gray-400">Expand to all visible UI components</span>
+                      </label>
+                    </div>
+                  </details>
                 </div>
                 
                 <Button 
@@ -610,18 +661,60 @@ function App() {
                   )}
                 </div>
                 
-                <div className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
-                  <Settings className="h-4 w-4 text-gray-400" />
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={includeMetadata}
-                      onChange={(e) => setIncludeMetadata(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
-                      disabled={isProcessingFile}
-                    />
-                    <span className="text-sm text-gray-300">Add Suggested Metadata</span>
-                  </label>
+                <div className="space-y-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
+                  <div className="flex items-center space-x-3">
+                    <Settings className="h-4 w-4 text-gray-400" />
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeMetadata}
+                        onChange={(e) => setIncludeMetadata(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                        disabled={isProcessingFile}
+                      />
+                      <span className="text-sm text-gray-300">Add Suggested Metadata</span>
+                    </label>
+                  </div>
+                  
+                  <details className="group">
+                    <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-300 flex items-center space-x-1">
+                      <Settings className="h-4 w-4" />
+                      <span>Advanced Options</span>
+                      <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
+                    </summary>
+                    <div className="mt-2 ml-5 space-y-2 border-l border-gray-700 pl-3">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={inferEdgeCases}
+                          onChange={(e) => setInferEdgeCases(e.target.checked)}
+                          className="w-3 h-3 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                          disabled={isProcessingFile}
+                        />
+                        <span className="text-xs text-gray-400">Infer edge cases</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={includeAdvancedCriteria}
+                          onChange={(e) => setIncludeAdvancedCriteria(e.target.checked)}
+                          className="w-3 h-3 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                          disabled={isProcessingFile}
+                        />
+                        <span className="text-xs text-gray-400">Include advanced acceptance criteria</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={expandAllComponents}
+                          onChange={(e) => setExpandAllComponents(e.target.checked)}
+                          className="w-3 h-3 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                          disabled={isProcessingFile}
+                        />
+                        <span className="text-xs text-gray-400">Expand to all visible UI components</span>
+                      </label>
+                    </div>
+                  </details>
                 </div>
                 
                 <Button 
