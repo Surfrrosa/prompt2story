@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown, Mail, X } from 'lucide-react'
+import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown, Mail, X, Upload, Image } from 'lucide-react'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 
@@ -51,6 +51,8 @@ function App() {
   const [isProcessingFile, setIsProcessingFile] = useState(false)
   const [filePreview, setFilePreview] = useState<string | null>(null)
   const [inputMode, setInputMode] = useState<'text' | 'design'>('text')
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [dragCounter, setDragCounter] = useState(0)
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -383,30 +385,7 @@ function App() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-
-    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
-    if (!validTypes.includes(file.type)) {
-      setError('Please upload a PNG, JPG, or PDF file')
-      return
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB')
-      return
-    }
-
-    setUploadedFile(file)
-    setError(null)
-
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setFilePreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-    } else {
-      setFilePreview(null)
-    }
+    processFile(file)
   }
 
   const handleAnalyzeDesign = async () => {
@@ -452,6 +431,68 @@ function App() {
     setUploadedFile(null)
     setFilePreview(null)
     setError(null)
+  }
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragCounter(prev => prev + 1)
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragOver(true)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragCounter(prev => prev - 1)
+    if (dragCounter <= 1) {
+      setIsDragOver(false)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+    setDragCounter(0)
+
+    const files = e.dataTransfer.files
+    if (files && files.length > 0) {
+      const file = files[0]
+      processFile(file)
+    }
+  }
+
+  const processFile = (file: File) => {
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
+    if (!validTypes.includes(file.type)) {
+      setError('Please upload a PNG, JPG, or PDF file')
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB')
+      return
+    }
+
+    setUploadedFile(file)
+    setError(null)
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setFilePreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    } else {
+      setFilePreview(null)
+    }
   }
 
   return (
@@ -629,13 +670,68 @@ function App() {
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Upload Design File (PNG, JPG, PDF)
                     </label>
-                    <input
-                      type="file"
-                      accept=".png,.jpg,.jpeg,.pdf"
-                      onChange={handleFileUpload}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-                      disabled={isProcessingFile}
-                    />
+                    
+                    {/* Drag and Drop Zone */}
+                    <div
+                      onDragEnter={handleDragEnter}
+                      onDragLeave={handleDragLeave}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      className={`relative w-full min-h-[200px] border-2 border-dashed rounded-xl transition-all duration-300 ease-in-out cursor-pointer group ${
+                        isDragOver
+                          ? 'border-blue-400 bg-blue-500/10 scale-[1.02]'
+                          : 'border-gray-600 bg-gray-800/50 hover:border-gray-500 hover:bg-gray-800/70'
+                      } ${isProcessingFile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <input
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.pdf"
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={isProcessingFile}
+                      />
+                      
+                      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                        <div className={`mb-4 transition-all duration-300 ${isDragOver ? 'scale-110' : 'group-hover:scale-105'}`}>
+                          <Upload className={`w-12 h-12 mx-auto transition-colors duration-300 ${
+                            isDragOver ? 'text-blue-400' : 'text-gray-400 group-hover:text-gray-300'
+                          }`} />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <p className={`text-lg font-medium transition-colors duration-300 ${
+                            isDragOver ? 'text-blue-300' : 'text-gray-300 group-hover:text-white'
+                          }`}>
+                            {isDragOver ? 'Drop your design file here' : 'Drag & drop your design file'}
+                          </p>
+                          
+                          <p className="text-sm text-gray-400">
+                            or <span className="text-blue-400 font-medium">click to browse</span>
+                          </p>
+                          
+                          <div className="flex items-center justify-center space-x-4 mt-4">
+                            <div className="flex items-center space-x-1">
+                              <Image className="w-4 h-4 text-gray-500" />
+                              <span className="text-xs text-gray-500">PNG, JPG</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <FileText className="w-4 h-4 text-gray-500" />
+                              <span className="text-xs text-gray-500">PDF</span>
+                            </div>
+                            <span className="text-xs text-gray-500">• Max 10MB</span>
+                          </div>
+                        </div>
+                        
+                        {isProcessingFile && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 rounded-xl">
+                            <div className="flex items-center space-x-3 text-blue-400">
+                              <Loader2 className="w-6 h-6 animate-spin" />
+                              <span className="text-sm font-medium">Processing file...</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {uploadedFile && (
