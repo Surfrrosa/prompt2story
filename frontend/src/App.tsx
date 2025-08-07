@@ -504,14 +504,14 @@ function App() {
             <TypeAnimation
               sequence={[
                 'AI User Story Generator',
-                2000,
+                3000,
                 'Built for Agile Teams',
-                2000,
+                3500,
                 'Turn Chaos Into Clarity',
-                2000,
+                4000,
               ]}
               wrapper="span"
-              speed={50}
+              speed={25}
               style={{ display: 'inline-block' }}
               repeat={0}
               cursor={true}
