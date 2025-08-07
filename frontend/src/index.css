@@ -1,10 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 @layer base {
   :root {
-    --radius: 0.5rem
-  ;
+    --radius: 0.5rem;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -12,7 +12,17 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%}
+    --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Custom color palette for exact user specifications */
+    --deep-charcoal: #121212;
+    --pure-white: #FFFFFF;
+    --soft-gray: #A0A0A0;
+    --vivid-purple: #7A5FFF;
+    --charcoal-lighter: #1a1a1a;
+    --charcoal-light: #2a2a2a;
+  }
+  
   .dark {
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -21,7 +31,62 @@
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+/* Custom utility classes for exact color specifications */
+@layer utilities {
+  .bg-deep-charcoal {
+    background-color: var(--deep-charcoal);
+  }
+  
+  .bg-charcoal-lighter {
+    background-color: var(--charcoal-lighter);
+  }
+  
+  .bg-charcoal-light {
+    background-color: var(--charcoal-light);
+  }
+  
+  .text-pure-white {
+    color: var(--pure-white);
+  }
+  
+  .text-soft-gray {
+    color: var(--soft-gray);
+  }
+  
+  .text-vivid-purple {
+    color: var(--vivid-purple);
+  }
+  
+  .bg-vivid-purple {
+    background-color: var(--vivid-purple);
+  }
+  
+  .border-charcoal-light {
+    border-color: var(--charcoal-light);
+  }
+  
+  .border-soft-gray {
+    border-color: var(--soft-gray);
+  }
+  
+  .focus\:ring-vivid-purple:focus {
+    --tw-ring-color: var(--vivid-purple);
+  }
+  
+  .hover\:bg-charcoal-light:hover {
+    background-color: var(--charcoal-light);
+  }
+  
+  .hover\:text-vivid-purple:hover {
+    color: var(--vivid-purple);
+  }
+  
+  .placeholder-soft-gray::placeholder {
+    color: var(--soft-gray);
   }
 }
 
