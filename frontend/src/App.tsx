@@ -417,6 +417,7 @@ function App() {
     try {
       const formData = new FormData()
       formData.append('file', uploadedFile)
+      formData.append('include_metadata', includeMetadata.toString())
 
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
       const response = await fetch(`${apiUrl}/analyze-design`, {
@@ -607,6 +608,20 @@ function App() {
                       )}
                     </div>
                   )}
+                </div>
+                
+                <div className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
+                  <Settings className="h-4 w-4 text-gray-400" />
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeMetadata}
+                      onChange={(e) => setIncludeMetadata(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                      disabled={isProcessingFile}
+                    />
+                    <span className="text-sm text-gray-300">Add Suggested Metadata</span>
+                  </label>
                 </div>
                 
                 <Button 

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
@@ -43,6 +43,7 @@ Return a JSON object with this structure:
 
 class TextInput(BaseModel):
     text: str
+    include_metadata: bool = False
 
 class UserStory(BaseModel):
     title: str
@@ -65,6 +66,9 @@ async def generate_user_stories(input_data: TextInput):
             raise HTTPException(status_code=400, detail="Input text cannot be empty")
         
         prompt_template = load_prompt()
+        
+        if input_data.include_metadata:
+            prompt_template += "\n\nIMPORTANT: Include detailed metadata tags in your response with priority, type, component, effort, and persona fields for each user story."
         
         full_prompt = f"{prompt_template}\n\nUnstructured text to analyze:\n{input_data.text}"
         
@@ -115,7 +119,7 @@ def load_design_prompt():
         return """Analyze this design mockup and generate user stories based on the UI elements you can identify. Focus on interactive elements like buttons, forms, navigation, and user workflows."""
 
 @app.post("/analyze-design", response_model=GenerationResponse)
-async def analyze_design(file: UploadFile = File(...)):
+async def analyze_design(file: UploadFile = File(...), include_metadata: bool = False):
     try:
         if not file.content_type or not file.content_type.startswith(('image/', 'application/pdf')):
             raise HTTPException(status_code=400, detail="Only image files (PNG, JPG) and PDF files are supported")
@@ -127,6 +131,9 @@ async def analyze_design(file: UploadFile = File(...)):
         base64_image = base64.b64encode(file_content).decode('utf-8')
         
         prompt_template = load_design_prompt()
+        
+        if include_metadata:
+            prompt_template += "\n\nIMPORTANT: Include detailed metadata tags in your response with priority, type, component, effort, and persona fields for each user story."
         
         response = openai_client.chat.completions.create(
             model="gpt-4o",
