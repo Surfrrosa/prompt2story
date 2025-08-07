@@ -44,6 +44,10 @@ function App() {
   const [showExportModal, setShowExportModal] = useState(false)
   const [pendingExportAction, setPendingExportAction] = useState<(() => void) | null>(null)
   const [emailSignupDismissed, setEmailSignupDismissed] = useState(false)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [isProcessingFile, setIsProcessingFile] = useState(false)
+  const [filePreview, setFilePreview] = useState<string | null>(null)
+  const [inputMode, setInputMode] = useState<'text' | 'design'>('text')
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -370,6 +374,76 @@ function App() {
     }
   }, [showExportModal])
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
+    if (!validTypes.includes(file.type)) {
+      setError('Please upload a PNG, JPG, or PDF file')
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB')
+      return
+    }
+
+    setUploadedFile(file)
+    setError(null)
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setFilePreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    } else {
+      setFilePreview(null)
+    }
+  }
+
+  const handleAnalyzeDesign = async () => {
+    if (!uploadedFile) {
+      setError('Please upload a design file to analyze')
+      return
+    }
+
+    setIsProcessingFile(true)
+    setError(null)
+    setResult(null)
+    setCopySuccess(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', uploadedFile)
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${apiUrl}/analyze-design`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Failed to analyze design')
+      }
+
+      const data: GenerationResponse = await response.json()
+      setResult(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+    } finally {
+      setIsProcessingFile(false)
+    }
+  }
+
+  const handleClearFile = () => {
+    setUploadedFile(null)
+    setFilePreview(null)
+    setError(null)
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -424,49 +498,133 @@ function App() {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Input Text
+              Input Method
             </CardTitle>
             <CardDescription className="text-gray-400">
-              Paste any unstructured input — feature ideas, meeting notes, or team conversations.
+              Choose how you want to generate user stories
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Textarea
-              placeholder="Ex: We discussed in the meeting that users should get SMS alerts when their tasks are overdue. Also, marketing needs the dashboard export by Friday."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              className="min-h-32 bg-gray-700 border-gray-600 text-white placeholder-gray-400 resize-none"
-              disabled={isLoading}
-            />
-            
-            <div className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
-              <Settings className="h-4 w-4 text-gray-400" />
+            {/* Input Mode Toggle */}
+            <div className="flex items-center space-x-4 p-3 bg-gray-700 rounded-lg border border-gray-600">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
-                  type="checkbox"
-                  checked={includeMetadata}
-                  onChange={(e) => setIncludeMetadata(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
-                  disabled={isLoading}
+                  type="radio"
+                  name="inputMode"
+                  value="text"
+                  checked={inputMode === 'text'}
+                  onChange={(e) => setInputMode(e.target.value as 'text' | 'design')}
+                  className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 focus:ring-blue-500 focus:ring-2"
                 />
-                <span className="text-sm text-gray-300">Add Suggested Metadata</span>
+                <span className="text-sm text-gray-300">Text Input</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="inputMode"
+                  value="design"
+                  checked={inputMode === 'design'}
+                  onChange={(e) => setInputMode(e.target.value as 'text' | 'design')}
+                  className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-sm text-gray-300">Design Upload</span>
               </label>
             </div>
-            
-            <Button 
-              onClick={handleGenerate}
-              disabled={isLoading || !inputText.trim()}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-150 ease-in-out"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating User Stories...
-                </>
-              ) : (
-                'Generate User Stories'
-              )}
-            </Button>
+
+            {inputMode === 'text' ? (
+              <>
+                <Textarea
+                  placeholder="Ex: We discussed in the meeting that users should get SMS alerts when their tasks are overdue. Also, marketing needs the dashboard export by Friday."
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  className="min-h-32 bg-gray-700 border-gray-600 text-white placeholder-gray-400 resize-none"
+                  disabled={isLoading}
+                />
+                
+                <div className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
+                  <Settings className="h-4 w-4 text-gray-400" />
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeMetadata}
+                      onChange={(e) => setIncludeMetadata(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                      disabled={isLoading}
+                    />
+                    <span className="text-sm text-gray-300">Add Suggested Metadata</span>
+                  </label>
+                </div>
+                
+                <Button 
+                  onClick={handleGenerate}
+                  disabled={isLoading || !inputText.trim()}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-150 ease-in-out"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating User Stories...
+                    </>
+                  ) : (
+                    'Generate User Stories'
+                  )}
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Upload Design File (PNG, JPG, PDF)
+                    </label>
+                    <input
+                      type="file"
+                      accept=".png,.jpg,.jpeg,.pdf"
+                      onChange={handleFileUpload}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                      disabled={isProcessingFile}
+                    />
+                  </div>
+
+                  {uploadedFile && (
+                    <div className="p-4 bg-gray-700 rounded-lg border border-gray-600">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-300">{uploadedFile.name}</span>
+                        <button
+                          onClick={handleClearFile}
+                          className="text-gray-400 hover:text-red-400 transition-colors"
+                          title="Remove file"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      {filePreview && (
+                        <img
+                          src={filePreview}
+                          alt="Design preview"
+                          className="max-w-full h-48 object-contain rounded border border-gray-600"
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <Button 
+                  onClick={handleAnalyzeDesign}
+                  disabled={isProcessingFile || !uploadedFile}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-150 ease-in-out"
+                >
+                  {isProcessingFile ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing Design...
+                    </>
+                  ) : (
+                    'Analyze Design'
+                  )}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
