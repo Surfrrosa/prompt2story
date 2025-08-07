@@ -133,20 +133,38 @@ def load_design_prompt():
         return """Analyze this design mockup and generate user stories based on the UI elements you can identify. Focus on interactive elements like buttons, forms, navigation, and user workflows."""
 
 def extract_pdf_text(file_content: bytes) -> str:
-    """Extract text from PDF file using PyPDF2."""
+    """Extract text from PDF file using PyPDF2 with robust error handling."""
     try:
         pdf_file = io.BytesIO(file_content)
-        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        
+        try:
+            pdf_reader = PyPDF2.PdfReader(pdf_file, strict=False)
+        except Exception as e:
+            pdf_file.seek(0)
+            try:
+                pdf_reader = PyPDF2.PdfReader(pdf_file)
+            except Exception:
+                raise HTTPException(status_code=400, detail="PDF file appears to be corrupted or in an unsupported format")
         
         text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text() + "\n"
+        try:
+            for page_num, page in enumerate(pdf_reader.pages):
+                try:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+                except Exception as e:
+                    continue
+        except Exception as e:
+            raise HTTPException(status_code=400, detail="Unable to extract text from PDF pages")
         
         if not text.strip():
             raise HTTPException(status_code=400, detail="PDF file appears to be empty or contains no extractable text")
             
         return text.strip()
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF processing error: {str(e)}")
 
