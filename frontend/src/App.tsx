@@ -402,7 +402,6 @@ function App() {
       if (interval) clearInterval(interval)
     }
   }, [isProcessingFile, processingMessages.length])
-
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
