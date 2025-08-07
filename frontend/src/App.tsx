@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -335,6 +335,25 @@ function App() {
     setShowExportModal(false)
     setPendingExportAction(null)
   }
+
+  const handleModalDismiss = () => {
+    setShowExportModal(false)
+    setPendingExportAction(null)
+    setEmail('')
+  }
+
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showExportModal) {
+        handleModalDismiss()
+      }
+    }
+
+    document.addEventListener('keydown', handleEscapeKey)
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey)
+    }
+  }, [showExportModal])
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
@@ -681,11 +700,18 @@ function App() {
 
         {/* Export Modal */}
         {showExportModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 border border-gray-700 rounded-xl max-w-md w-full p-6 relative">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={handleModalDismiss}
+          >
+            <div 
+              className="bg-gray-800 border border-gray-700 rounded-xl max-w-md w-full p-6 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
-                onClick={handleExportDecline}
+                onClick={handleModalDismiss}
                 className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                title="Close modal"
               >
                 <X className="h-5 w-5" />
               </button>
