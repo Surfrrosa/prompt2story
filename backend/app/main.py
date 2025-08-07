@@ -5,8 +5,8 @@ import openai
 import os
 import json
 import base64
-import subprocess
-import tempfile
+import PyPDF2
+import io
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -133,24 +133,20 @@ def load_design_prompt():
         return """Analyze this design mockup and generate user stories based on the UI elements you can identify. Focus on interactive elements like buttons, forms, navigation, and user workflows."""
 
 def extract_pdf_text(file_content: bytes) -> str:
-    """Extract text from PDF file using pdftotext."""
+    """Extract text from PDF file using PyPDF2."""
     try:
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
-            temp_file.write(file_content)
-            temp_file.flush()
+        pdf_file = io.BytesIO(file_content)
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="PDF file appears to be empty or contains no extractable text")
             
-            result = subprocess.run(
-                ['pdftotext', temp_file.name, '-'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            
-            os.unlink(temp_file.name)
-            return result.stdout
-            
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=400, detail="Failed to extract text from PDF file")
+        return text.strip()
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF processing error: {str(e)}")
 
