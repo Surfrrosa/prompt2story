@@ -292,8 +292,8 @@ function App() {
     <div className="min-h-screen bg-gray-900 text-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2 text-white">User Story Generator</h1>
-          <p className="text-gray-400">Transform unstructured text into structured user stories with AI</p>
+          <h1 className="text-4xl font-bold mb-2 text-white">AI User Story Generator</h1>
+          <p className="text-gray-400">Transform meeting notes and requirements into structured user stories with AI. The perfect product manager tool for agile teams.</p>
         </div>
 
         <Card className="bg-gray-800 border-gray-700 mb-8">
