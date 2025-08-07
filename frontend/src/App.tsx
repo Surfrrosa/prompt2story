@@ -396,7 +396,7 @@ function App() {
     if (isProcessingFile) {
       interval = setInterval(() => {
         setProcessingMessage(prev => (prev + 1) % processingMessages.length)
-      }, 2000)
+      }, 1500)
     }
     return () => {
       if (interval) clearInterval(interval)
@@ -709,73 +709,72 @@ function App() {
                       Upload Design File (PNG, JPG, PDF)
                     </label>
                     
-                    {/* Drag and Drop Zone */}
-                    <div
-                      onDragEnter={handleDragEnter}
-                      onDragLeave={handleDragLeave}
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                      className={`relative w-full min-h-[200px] border-2 border-dashed rounded-xl transition-all duration-300 ease-in-out cursor-pointer group ${
-                        isDragOver
-                          ? 'border-vivid-purple bg-vivid-purple/10 scale-[1.02]'
-                          : 'border-charcoal-light bg-charcoal-lighter/50 hover:border-soft-gray hover:bg-charcoal-lighter/70'
-                      } ${isProcessingFile ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      <input
-                        type="file"
-                        accept=".png,.jpg,.jpeg,.pdf"
-                        onChange={handleFileUpload}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        disabled={isProcessingFile}
-                      />
-                      
-                      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                        <div className={`mb-4 transition-all duration-300 ${isDragOver ? 'scale-110' : 'group-hover:scale-105'}`}>
-                          <Upload className={`w-12 h-12 mx-auto transition-colors duration-300 ${
-                            isDragOver ? 'text-vivid-purple' : 'text-soft-gray group-hover:text-pure-white'
-                          }`} />
-                        </div>
+                    {/* Drag and Drop Zone - State Swap Implementation */}
+                    {!isProcessingFile ? (
+                      <div
+                        onDragEnter={handleDragEnter}
+                        onDragLeave={handleDragLeave}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                        className={`relative w-full min-h-[200px] border-2 border-dashed rounded-xl transition-all duration-300 ease-in-out cursor-pointer group ${
+                          isDragOver
+                            ? 'border-vivid-purple bg-vivid-purple/10 scale-[1.02]'
+                            : 'border-charcoal-light bg-charcoal-lighter/50 hover:border-soft-gray hover:bg-charcoal-lighter/70'
+                        }`}
+                      >
+                        <input
+                          type="file"
+                          accept=".png,.jpg,.jpeg,.pdf"
+                          onChange={handleFileUpload}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
                         
-                        <div className="space-y-2">
-                          <p className={`text-lg font-medium transition-colors duration-300 ${
-                            isDragOver ? 'text-pure-white' : 'text-soft-gray group-hover:text-pure-white'
-                          }`}>
-                            {isDragOver ? 'Drop your design file here' : 'Drag & drop your design file'}
-                          </p>
-                          
-                          <p className="text-sm text-soft-gray">
-                            or <span className="text-vivid-purple font-medium hover:text-vivid-purple cursor-pointer">click to browse</span>
-                          </p>
-                          
-                          <div className="flex items-center justify-center space-x-4 mt-4">
-                            <div className="flex items-center space-x-1">
-                              <Image className="w-4 h-4 text-soft-gray" />
-                              <span className="text-xs text-soft-gray">PNG, JPG</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <FileText className="w-4 h-4 text-soft-gray" />
-                              <span className="text-xs text-soft-gray">PDF</span>
-                            </div>
-                            <span className="text-xs text-soft-gray">• Max 10MB</span>
+                        <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                          <div className={`mb-4 transition-all duration-300 ${isDragOver ? 'scale-110' : 'group-hover:scale-105'}`}>
+                            <Upload className={`w-12 h-12 mx-auto transition-colors duration-300 ${
+                              isDragOver ? 'text-vivid-purple' : 'text-soft-gray group-hover:text-pure-white'
+                            }`} />
                           </div>
-                        </div>
-                        
-                        {isProcessingFile && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-deep-charcoal/70 rounded-xl backdrop-blur-sm">
-                            <div className="flex flex-col items-center space-y-4 text-center">
-                              <div className="flex space-x-1">
-                                <div className="w-2 h-2 bg-vivid-purple rounded-full pulse-dot"></div>
-                                <div className="w-2 h-2 bg-vivid-purple rounded-full pulse-dot"></div>
-                                <div className="w-2 h-2 bg-vivid-purple rounded-full pulse-dot"></div>
+                          
+                          <div className="space-y-2">
+                            <p className={`text-lg font-medium transition-colors duration-300 ${
+                              isDragOver ? 'text-pure-white' : 'text-soft-gray group-hover:text-pure-white'
+                            }`}>
+                              {isDragOver ? 'Drop your design file here' : 'Drag & drop your design file'}
+                            </p>
+                            
+                            <p className="text-sm text-soft-gray">
+                              or <span className="text-vivid-purple font-medium hover:text-vivid-purple cursor-pointer">click to browse</span>
+                            </p>
+                            
+                            <div className="flex items-center justify-center space-x-4 mt-4">
+                              <div className="flex items-center space-x-1">
+                                <Image className="w-4 h-4 text-soft-gray" />
+                                <span className="text-xs text-soft-gray">PNG, JPG</span>
                               </div>
-                              <span className="text-sm font-medium text-pure-white">
-                                {processingMessages[processingMessage]}
-                              </span>
+                              <div className="flex items-center space-x-1">
+                                <FileText className="w-4 h-4 text-soft-gray" />
+                                <span className="text-xs text-soft-gray">PDF</span>
+                              </div>
+                              <span className="text-xs text-soft-gray">• Max 10MB</span>
                             </div>
                           </div>
-                        )}
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="w-full min-h-[200px] bg-deep-charcoal rounded-xl flex items-center justify-center">
+                        <div className="flex flex-col items-center space-y-4 text-center">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-vivid-purple rounded-full pulse-dot"></div>
+                            <div className="w-2 h-2 bg-vivid-purple rounded-full pulse-dot"></div>
+                            <div className="w-2 h-2 bg-vivid-purple rounded-full pulse-dot"></div>
+                          </div>
+                          <span className="text-lg font-semibold text-vivid-purple">
+                            {processingMessages[processingMessage]}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {uploadedFile && (
