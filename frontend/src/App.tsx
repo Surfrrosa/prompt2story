@@ -497,7 +497,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-gray-100">
+    <div className="min-h-screen bg-gray-900 text-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2 text-white" aria-label="AI User Story Generator">
@@ -523,7 +523,7 @@ function App() {
 
         {/* Email Signup Form */}
         {!emailSignupDismissed && (
-          <Card className="bg-slate-800 border-slate-700 mb-8 animate-in slide-in-from-top-2 duration-300">
+          <Card className="bg-gray-800 border-gray-700 mb-8 animate-in slide-in-from-top-2 duration-300">
             <CardContent className="pt-6 relative">
               <button
                 onClick={handleDismissEmailSignup}
@@ -547,7 +547,7 @@ function App() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Your email here"
-                      className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       required
                     />
                     <Button 
@@ -563,7 +563,7 @@ function App() {
           </Card>
         )}
 
-        <Card className="bg-slate-800 border-slate-700 mb-8">
+        <Card className="bg-gray-800 border-gray-700 mb-8">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -575,7 +575,7 @@ function App() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Input Mode Toggle */}
-            <div className="flex items-center space-x-4 p-3 bg-slate-700 rounded-lg border border-slate-600">
+            <div className="flex items-center space-x-4 p-3 bg-gray-700 rounded-lg border border-gray-600">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="radio"
@@ -583,7 +583,7 @@ function App() {
                   value="text"
                   checked={inputMode === 'text'}
                   onChange={(e) => setInputMode(e.target.value as 'text' | 'design')}
-                  className="w-4 h-4 text-purple-600 bg-slate-600 border-slate-500 focus:ring-purple-500 focus:ring-2"
+                  className="w-4 h-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500 focus:ring-2"
                 />
                 <span className="text-sm text-slate-300">Text Input</span>
               </label>
@@ -594,7 +594,7 @@ function App() {
                   value="design"
                   checked={inputMode === 'design'}
                   onChange={(e) => setInputMode(e.target.value as 'text' | 'design')}
-                  className="w-4 h-4 text-purple-600 bg-slate-600 border-slate-500 focus:ring-purple-500 focus:ring-2"
+                  className="w-4 h-4 text-purple-600 bg-gray-600 border-gray-500 focus:ring-purple-500 focus:ring-2"
                 />
                 <span className="text-sm text-slate-300">Design Upload</span>
               </label>
@@ -606,11 +606,11 @@ function App() {
                   placeholder="Ex: We discussed in the meeting that users should get SMS alerts when their tasks are overdue. Also, marketing needs the dashboard export by Friday."
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  className="min-h-32 bg-slate-700 border-slate-600 text-white placeholder-gray-400 resize-none"
+                  className="min-h-32 bg-gray-700 border-gray-600 text-white placeholder-gray-400 resize-none"
                   disabled={isLoading}
                 />
                 
-                <div className="space-y-3 p-3 bg-slate-700 rounded-lg border border-slate-600">
+                <div className="space-y-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
                   <div className="flex items-center space-x-3">
                     <Settings className="h-4 w-4 text-slate-400" />
                     <label className="flex items-center space-x-2 cursor-pointer">
@@ -618,7 +618,7 @@ function App() {
                         type="checkbox"
                         checked={includeMetadata}
                         onChange={(e) => setIncludeMetadata(e.target.checked)}
-                        className="w-4 h-4 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-purple-500 focus:ring-2"
+                        className="w-4 h-4 text-purple-600 bg-gray-600 border-gray-500 rounded focus:ring-purple-500 focus:ring-2"
                         disabled={isLoading}
                       />
                       <span className="text-sm text-slate-300">Add Suggested Metadata</span>
@@ -631,13 +631,13 @@ function App() {
                       <span>Advanced Options</span>
                       <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
                     </summary>
-                    <div className="mt-2 ml-5 space-y-2 border-l border-slate-700 pl-3">
+                    <div className="mt-2 ml-5 space-y-2 border-l border-gray-700 pl-3">
                       <label className="flex items-center space-x-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={inferEdgeCases}
                           onChange={(e) => setInferEdgeCases(e.target.checked)}
-                          className="w-3 h-3 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-purple-500 focus:ring-2"
+                          className="w-3 h-3 text-purple-600 bg-gray-600 border-gray-500 rounded focus:ring-purple-500 focus:ring-2"
                           disabled={isLoading}
                         />
                         <span className="text-xs text-slate-400">Infer edge cases</span>
@@ -647,7 +647,7 @@ function App() {
                           type="checkbox"
                           checked={includeAdvancedCriteria}
                           onChange={(e) => setIncludeAdvancedCriteria(e.target.checked)}
-                          className="w-3 h-3 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-purple-500 focus:ring-2"
+                          className="w-3 h-3 text-purple-600 bg-gray-600 border-gray-500 rounded focus:ring-purple-500 focus:ring-2"
                           disabled={isLoading}
                         />
                         <span className="text-xs text-slate-400">Include advanced acceptance criteria</span>
@@ -657,7 +657,7 @@ function App() {
                           type="checkbox"
                           checked={expandAllComponents}
                           onChange={(e) => setExpandAllComponents(e.target.checked)}
-                          className="w-3 h-3 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-purple-500 focus:ring-2"
+                          className="w-3 h-3 text-purple-600 bg-gray-600 border-gray-500 rounded focus:ring-purple-500 focus:ring-2"
                           disabled={isLoading}
                         />
                         <span className="text-xs text-slate-400">Expand to all visible UI components</span>
@@ -698,7 +698,7 @@ function App() {
                       className={`relative w-full min-h-[200px] border-2 border-dashed rounded-xl transition-all duration-300 ease-in-out cursor-pointer group ${
                         isDragOver
                           ? 'border-purple-400 bg-purple-500/10 scale-[1.02]'
-                          : 'border-slate-600 bg-slate-800/50 hover:border-slate-500 hover:bg-slate-800/70'
+                          : 'border-gray-600 bg-gray-800/50 hover:border-gray-500 hover:bg-gray-800/70'
                       } ${isProcessingFile ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <input
@@ -741,7 +741,7 @@ function App() {
                         </div>
                         
                         {isProcessingFile && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 rounded-xl">
+                          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 rounded-xl">
                             <div className="flex items-center space-x-3 text-purple-400">
                               <Loader2 className="w-6 h-6 animate-spin" />
                               <span className="text-sm font-medium">Processing file...</span>
@@ -753,7 +753,7 @@ function App() {
                   </div>
 
                   {uploadedFile && (
-                    <div className="p-4 bg-slate-700 rounded-lg border border-slate-600">
+                    <div className="p-4 bg-gray-700 rounded-lg border border-gray-600">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm text-slate-300">{uploadedFile.name}</span>
                         <button
@@ -768,14 +768,14 @@ function App() {
                         <img
                           src={filePreview}
                           alt="Design preview"
-                          className="max-w-full h-48 object-contain rounded border border-slate-600"
+                          className="max-w-full h-48 object-contain rounded border border-gray-600"
                         />
                       )}
                     </div>
                   )}
                 </div>
                 
-                <div className="space-y-3 p-3 bg-slate-700 rounded-lg border border-slate-600">
+                <div className="space-y-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
                   <div className="flex items-center space-x-3">
                     <Settings className="h-4 w-4 text-slate-400" />
                     <label className="flex items-center space-x-2 cursor-pointer">
@@ -783,7 +783,7 @@ function App() {
                         type="checkbox"
                         checked={includeMetadata}
                         onChange={(e) => setIncludeMetadata(e.target.checked)}
-                        className="w-4 h-4 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-purple-500 focus:ring-2"
+                        className="w-4 h-4 text-purple-600 bg-gray-600 border-gray-500 rounded focus:ring-purple-500 focus:ring-2"
                         disabled={isProcessingFile}
                       />
                       <span className="text-sm text-slate-300">Add Suggested Metadata</span>
@@ -796,13 +796,13 @@ function App() {
                       <span>Advanced Options</span>
                       <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
                     </summary>
-                    <div className="mt-2 ml-5 space-y-2 border-l border-slate-700 pl-3">
+                    <div className="mt-2 ml-5 space-y-2 border-l border-gray-700 pl-3">
                       <label className="flex items-center space-x-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={inferEdgeCases}
                           onChange={(e) => setInferEdgeCases(e.target.checked)}
-                          className="w-3 h-3 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-purple-500 focus:ring-2"
+                          className="w-3 h-3 text-purple-600 bg-gray-600 border-gray-500 rounded focus:ring-purple-500 focus:ring-2"
                           disabled={isProcessingFile}
                         />
                         <span className="text-xs text-slate-400">Infer edge cases</span>
@@ -812,7 +812,7 @@ function App() {
                           type="checkbox"
                           checked={includeAdvancedCriteria}
                           onChange={(e) => setIncludeAdvancedCriteria(e.target.checked)}
-                          className="w-3 h-3 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-purple-500 focus:ring-2"
+                          className="w-3 h-3 text-purple-600 bg-gray-600 border-gray-500 rounded focus:ring-purple-500 focus:ring-2"
                           disabled={isProcessingFile}
                         />
                         <span className="text-xs text-slate-400">Include advanced acceptance criteria</span>
@@ -822,7 +822,7 @@ function App() {
                           type="checkbox"
                           checked={expandAllComponents}
                           onChange={(e) => setExpandAllComponents(e.target.checked)}
-                          className="w-3 h-3 text-purple-600 bg-slate-600 border-slate-500 rounded focus:ring-purple-500 focus:ring-2"
+                          className="w-3 h-3 text-purple-600 bg-gray-600 border-gray-500 rounded focus:ring-purple-500 focus:ring-2"
                           disabled={isProcessingFile}
                         />
                         <span className="text-xs text-slate-400">Expand to all visible UI components</span>
@@ -864,14 +864,14 @@ function App() {
         {result && (
           <div className="space-y-6">
             <div>
-              <div className="border-t border-slate-600 pt-6 mb-6"></div>
+              <div className="border-t border-gray-600 pt-6 mb-6"></div>
               <h2 className="text-2xl font-semibold mb-4 text-white flex items-center gap-2">
                 <CheckCircle className="h-6 w-6 text-green-500" />
                 Generated User Stories
               </h2>
               <div className="space-y-4">
                 {result.user_stories.map((story, index) => (
-                  <Card key={index} className="bg-slate-800 border-slate-700 rounded-xl">
+                  <Card key={index} className="bg-gray-800 border-gray-700 rounded-xl">
                     <CardHeader>
                       <CardTitle className="text-white">{story.title}</CardTitle>
                     </CardHeader>
@@ -893,7 +893,7 @@ function App() {
                       </div>
                       
                       {includeMetadata && story.metadata && (
-                        <div className="border-t border-slate-600 pt-4">
+                        <div className="border-t border-gray-600 pt-4">
                           <button
                             onClick={() => toggleMetadataExpansion(index)}
                             className="flex items-center gap-2 text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors"
@@ -907,7 +907,7 @@ function App() {
                           </button>
                           
                           {expandedMetadata.has(index) && (
-                            <div className="mt-3 p-3 bg-slate-700 rounded-lg border border-slate-600">
+                            <div className="mt-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                 <div className="flex justify-between">
                                   <span className="text-slate-400">Priority:</span>
@@ -950,7 +950,7 @@ function App() {
                         </div>
                       )}
                       
-                      <div className="border-t border-slate-600 pt-4 mt-4">
+                      <div className="border-t border-gray-600 pt-4 mt-4">
                         <div className="flex items-center gap-3 mb-3">
                           <button
                             onClick={() => handleFeedbackRating(index, 'up')}
@@ -958,7 +958,7 @@ function App() {
                             className={`p-2 rounded-lg transition-colors duration-150 ease-in-out ${
                               feedbackStates.get(index)?.rating === 'up'
                                 ? 'bg-green-600 text-white'
-                                : 'text-slate-400 hover:text-green-400 hover:bg-slate-700'
+                                : 'text-slate-400 hover:text-green-400 hover:bg-gray-700'
                             }`}
                           >
                             <ThumbsUp className="h-4 w-4" />
@@ -969,7 +969,7 @@ function App() {
                             className={`p-2 rounded-lg transition-colors duration-150 ease-in-out ${
                               feedbackStates.get(index)?.rating === 'down'
                                 ? 'bg-red-600 text-white'
-                                : 'text-slate-400 hover:text-red-400 hover:bg-slate-700'
+                                : 'text-slate-400 hover:text-red-400 hover:bg-gray-700'
                             }`}
                           >
                             <ThumbsDown className="h-4 w-4" />
@@ -978,7 +978,7 @@ function App() {
                             onClick={() => handleRegenerateStory(index)}
                             disabled={regeneratingStates.has(index)}
                             title="Regenerate story"
-                            className="px-3 py-2 rounded-lg text-sm transition-colors duration-150 ease-in-out text-gray-400 hover:text-purple-400 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-2 rounded-lg text-sm transition-colors duration-150 ease-in-out text-gray-400 hover:text-purple-400 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {regeneratingStates.has(index) ? (
                               <>
@@ -1016,7 +1016,7 @@ function App() {
                                 value={feedbackStates.get(index)?.text || ''}
                                 onChange={(e) => handleFeedbackTextChange(index, e.target.value)}
                                 placeholder="Share your thoughts on how this user story could be better..."
-                                className="min-h-20 bg-slate-700 border-slate-600 text-white placeholder-gray-400 resize-none"
+                                className="min-h-20 bg-gray-700 border-gray-600 text-white placeholder-gray-400 resize-none"
                               />
                             </div>
                             <Button
@@ -1038,7 +1038,7 @@ function App() {
             {result.edge_cases.length > 0 && (
               <div>
                 <h2 className="text-2xl font-semibold mb-4 text-white">Edge Cases</h2>
-                <Card className="bg-slate-800 border-slate-700 rounded-xl">
+                <Card className="bg-gray-800 border-gray-700 rounded-xl">
                   <CardContent className="pt-6">
                     <div className="space-y-2">
                       {result.edge_cases.map((edgeCase, index) => (
@@ -1055,7 +1055,7 @@ function App() {
               </div>
             )}
 
-            <Card className="bg-slate-800 border-slate-700 rounded-xl">
+            <Card className="bg-gray-800 border-gray-700 rounded-xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Download className="h-5 w-5" />
@@ -1070,7 +1070,7 @@ function App() {
                   <Button
                     onClick={() => handleExportWithModal(handleCopyToClipboard)}
                     variant="outline"
-                    className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-slate-600 hover:border-slate-500"
+                    className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-500"
                   >
                     <Copy className="mr-2 h-4 w-4" />
                     Copy to Clipboard
@@ -1078,7 +1078,7 @@ function App() {
                   <Button
                     onClick={() => handleExportWithModal(handleDownloadMarkdown)}
                     variant="outline"
-                    className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-slate-600 hover:border-slate-500"
+                    className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-500"
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download as Markdown
@@ -1086,7 +1086,7 @@ function App() {
                   <Button
                     onClick={() => handleExportWithModal(handleDownloadJSON)}
                     variant="outline"
-                    className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-slate-600 hover:border-slate-500"
+                    className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-500"
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download as JSON
@@ -1109,7 +1109,7 @@ function App() {
             onClick={handleModalDismiss}
           >
             <div 
-              className="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6 relative"
+              className="bg-gray-800 border border-gray-700 rounded-xl max-w-md w-full p-6 relative"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -1135,7 +1135,7 @@ function App() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Your email here"
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   
                   <div className="flex gap-3">
@@ -1149,7 +1149,7 @@ function App() {
                     <Button
                       onClick={handleExportDecline}
                       variant="outline"
-                      className="flex-1 bg-slate-700 border-slate-600 text-white hover:bg-slate-600 hover:border-slate-500"
+                      className="flex-1 bg-gray-700 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-500"
                     >
                       No thanks
                     </Button>
