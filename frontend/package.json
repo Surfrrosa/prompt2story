@@ -11,7 +11,11 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "vercel-build": "npm run build"
+    "vercel-build": "npm run build",
+    "ops:health": "bash ../ops/health_check.sh",
+    "ops:hourly": "bash ../ops/hourly_watchdog.sh",
+    "ops:weekly": "bash ../ops/weekly_perf.sh",
+    "ops:monthly": "bash ../ops/monthly_resilience.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

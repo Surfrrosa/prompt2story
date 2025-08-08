@@ -1,0 +1,97 @@
+name: Observability and Performance Monitoring
+
+on:
+  schedule:
+    # Daily health check at 7:30 AM UTC
+    - cron: '30 7 * * *'
+    # Hourly watchdog at top of every hour
+    - cron: '0 * * * *'
+    # Weekly performance check on Mondays at 8:00 AM UTC
+    - cron: '0 8 * * 1'
+    # Monthly resilience drill on 1st at 9:00 AM UTC
+    - cron: '0 9 1 * *'
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: 'Type of check to run'
+        required: true
+        default: 'health'
+        type: choice
+        options:
+          - health
+          - hourly
+          - weekly
+          - monthly
+
+env:
+  BASE_URL: https://prompt2story.com
+  API_URL: https://app-huypwpho.fly.dev
+
+jobs:
+  daily-health:
+    if: github.event.schedule == '30 7 * * *' || github.event.inputs.check_type == 'health'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Daily Health Check
+        run: npm run ops:health
+        working-directory: frontend
+      - name: Upload artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-check-failure-${{ github.run_number }}
+          path: ops/artifacts/
+
+  hourly-watchdog:
+    if: github.event.schedule == '0 * * * *' || github.event.inputs.check_type == 'hourly'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Hourly Watchdog
+        run: npm run ops:hourly
+        working-directory: frontend
+      - name: Upload artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watchdog-failure-${{ github.run_number }}
+          path: ops/artifacts/
+
+  weekly-performance:
+    if: github.event.schedule == '0 8 * * 1' || github.event.inputs.check_type == 'weekly'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install bc for calculations
+        run: sudo apt-get update && sudo apt-get install -y bc
+      - name: Run Weekly Performance Check
+        run: npm run ops:weekly
+        working-directory: frontend
+      - name: Upload Lighthouse artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report-${{ github.run_number }}
+          path: ops/artifacts/
+
+  monthly-resilience:
+    if: github.event.schedule == '0 9 1 * *' || github.event.inputs.check_type == 'monthly'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Run Monthly Resilience Test
+        run: npm run ops:monthly
+        working-directory: frontend
+      - name: Upload load test artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: loadtest-report-${{ github.run_number }}
+          path: ops/artifacts/
