@@ -115,7 +115,7 @@ async def generate_user_stories(input_data: TextInput):
                 result = json.loads(json_str)
             else:
                 raise ValueError("No JSON found in response")
-        except (json.JSONDecodeError, ValueError):
+        except (json.JSONDecodeError, ValueError) as e:
             result = {
                 "user_stories": [
                     {
@@ -273,7 +273,7 @@ async def analyze_design(
                 result = json.loads(json_str)
             else:
                 raise ValueError("No JSON found in response")
-        except (json.JSONDecodeError, ValueError):
+        except (json.JSONDecodeError, ValueError) as e:
             result = {
                 "user_stories": [
                     {
