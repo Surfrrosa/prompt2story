@@ -36,10 +36,13 @@ Return a JSON object with the following structure:
         "Given [accessibility context], when [assistive technology used], then [accessible outcome]"
       ],
       "ui_component": "button|form|navigation|modal|list|search|etc",
-      "tags": {
-        "type": "feature|enhancement|accessibility",
+      "metadata": {
+        "priority": "Low|Medium|High",
+        "type": "Feature|Enhancement|Accessibility",
         "component": "ui|navigation|form|etc",
-        "priority": "low|medium|high"
+        "effort": "1 day|3 days|1 week|etc",
+        "persona": "End User|Admin|Support Agent|Engineer|Designer|QA|Customer|Other",
+        "persona_other": "custom persona if Other selected"
       }
     }
   ],
