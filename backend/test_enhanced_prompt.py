@@ -61,8 +61,8 @@ try:
         print(f'Generated {len(result["user_stories"])} user stories:')
         for i, story in enumerate(result['user_stories'], 1):
             print(f'{i}. {story["title"]}')
-            if 'tags' in story and story['tags']:
-                print(f'   Tags: {story["tags"]}')
+            if 'metadata' in story and story['metadata']:
+                print(f'   Metadata: {story["metadata"]}')
             print(f'   Story: {story["story"]}')
             print(f'   Acceptance Criteria: {len(story["acceptance_criteria"])} items')
             print()

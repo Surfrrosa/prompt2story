@@ -12,7 +12,7 @@ Your primary goal is to identify and extract EVERY separate issue, bug, feature,
 4. **Convert ALL problems to user stories** - Bugs, QA gaps, missing features, broken behaviors all become structured user stories
 5. **Ensure 1:1 mapping** - One user story per distinct issue, no exceptions
 6. **Create 3-5 detailed acceptance criteria per story** - Use proper Gherkin format (Given/When/Then) covering normal flow, edge cases, error scenarios, and different states
-7. **Add optional tags when confident** - Include type (bug/feature), component, priority when clearly indicated
+7. **Add optional metadata when confident** - Include type (bug/feature), component, priority, effort, persona when clearly indicated
 
 ## Enhanced Multi-Story Parsing Guidelines:
 
@@ -53,10 +53,13 @@ Return a JSON object with the following structure:
         "Given [different state], when [action], then [state-specific outcome]",
         "Given [boundary condition], when [action], then [boundary behavior]"
       ],
-      "tags": {
-        "type": "bug|feature|enhancement|performance",
+      "metadata": {
+        "priority": "Low|Medium|High",
+        "type": "Feature|Bug|Chore|Enhancement",
         "component": "form|admin|ui|api|etc",
-        "priority": "low|medium|high"
+        "effort": "1 day|3 days|1 week|etc",
+        "persona": "End User|Admin|Support Agent|Engineer|Designer|QA|Customer|Other",
+        "persona_other": "custom persona if Other selected"
       }
     }
   ],
@@ -67,7 +70,7 @@ Return a JSON object with the following structure:
 }
 ```
 
-**Important**: The "tags" field is optional and should only be included when you can confidently determine the values from the input text.
+**Important**: The "metadata" field is optional and should only be included when you can confidently determine the values from the input text.
 
 ## Guidelines:
 - **Count your stories** - Before finalizing, count distinct issues in input vs stories generated (should be 1:1)

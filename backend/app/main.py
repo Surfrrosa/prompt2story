@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import openai
 import os
 import json
@@ -10,6 +11,14 @@ import io
 from dotenv import load_dotenv
 
 load_dotenv()
+
+class Metadata(BaseModel):
+    priority: str
+    type: str
+    component: str
+    effort: str
+    persona: str
+    persona_other: Optional[str] = None
 
 app = FastAPI(title="User Story Generator API")
 
@@ -54,7 +63,7 @@ class UserStory(BaseModel):
     title: str
     story: str
     acceptance_criteria: list[str]
-    tags: dict[str, str] = None
+    metadata: Optional[Metadata] = None
 
 class GenerationResponse(BaseModel):
     user_stories: list[UserStory]
@@ -73,7 +82,7 @@ async def generate_user_stories(input_data: TextInput):
         prompt_template = load_prompt()
         
         if input_data.include_metadata:
-            prompt_template += "\n\nIMPORTANT: Include detailed metadata tags in your response with priority, type, component, effort, and persona fields for each user story."
+            prompt_template += "\n\nIMPORTANT: Include detailed metadata in your response with priority (Low/Medium/High), type (Feature/Bug/Chore/Enhancement), component, effort, and persona (End User/Admin/Support Agent/Engineer/Designer/QA/Customer/Other) fields for each user story."
         
         if input_data.infer_edge_cases:
             prompt_template += "\n\nEDGE CASES: Infer and include comprehensive edge cases, boundary conditions, and error scenarios for each user story."
@@ -193,7 +202,7 @@ async def analyze_design(
             prompt_template = load_prompt()
             
             if include_metadata:
-                prompt_template += "\n\nIMPORTANT: Include detailed metadata tags in your response with priority, type, component, effort, and persona fields for each user story."
+                prompt_template += "\n\nIMPORTANT: Include detailed metadata in your response with priority (Low/Medium/High), type (Feature/Bug/Chore/Enhancement), component, effort, and persona (End User/Admin/Support Agent/Engineer/Designer/QA/Customer/Other) fields for each user story."
             
             if infer_edge_cases:
                 prompt_template += "\n\nEDGE CASES: Infer and include comprehensive edge cases, boundary conditions, and error scenarios for each user story."
@@ -222,7 +231,7 @@ async def analyze_design(
             prompt_template = load_design_prompt()
             
             if include_metadata:
-                prompt_template += "\n\nIMPORTANT: Include detailed metadata tags in your response with priority, type, component, effort, and persona fields for each user story."
+                prompt_template += "\n\nIMPORTANT: Include detailed metadata in your response with priority (Low/Medium/High), type (Feature/Enhancement/Accessibility), component, effort, and persona (End User/Admin/Support Agent/Engineer/Designer/QA/Customer/Other) fields for each user story."
             
             if infer_edge_cases:
                 prompt_template += "\n\nEDGE CASES: Infer and include comprehensive edge cases, boundary conditions, and error scenarios for each UI element and interaction."
