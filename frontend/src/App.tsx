@@ -35,7 +35,7 @@ function App() {
   const [result, setResult] = useState<GenerationResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
-  const [includeMetadata, setIncludeMetadata] = useState(false)
+  const [includeMetadata, setIncludeMetadata] = useState(true)
   const [inferEdgeCases, setInferEdgeCases] = useState(true)
   const [includeAdvancedCriteria, setIncludeAdvancedCriteria] = useState(true)
   const [expandAllComponents, setExpandAllComponents] = useState(true)
