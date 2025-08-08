@@ -69,6 +69,11 @@ class GenerationResponse(BaseModel):
     user_stories: list[UserStory]
     edge_cases: list[str]
 
+class RegenerateRequest(BaseModel):
+    original_input: str
+    current_story: UserStory
+    include_metadata: bool = False
+
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
@@ -133,6 +138,101 @@ async def generate_user_stories(input_data: TextInput):
             }
         
         return GenerationResponse(**result)
+        
+    except openai.OpenAIError as e:
+        raise HTTPException(status_code=500, detail=f"OpenAI API error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.post("/regenerate-story", response_model=UserStory)
+async def regenerate_story(request: RegenerateRequest):
+    try:
+        if not request.original_input.strip():
+            raise HTTPException(status_code=400, detail="Original input cannot be empty")
+        
+        regeneration_prompt = f"""You are a senior Product Owner. Your task is to regenerate and improve a single user story based on the original input and current story provided.
+
+ORIGINAL INPUT:
+{request.original_input}
+
+CURRENT STORY TO IMPROVE:
+Title: {request.current_story.title}
+Story: {request.current_story.story}
+Acceptance Criteria: {', '.join(request.current_story.acceptance_criteria)}
+
+INSTRUCTIONS:
+1. Analyze the original input to understand the full context
+2. Improve the current story by making it more specific, actionable, and comprehensive
+3. Generate 3-5 detailed acceptance criteria using proper Gherkin format (Given/When/Then)
+4. Ensure the story addresses the core need from the original input
+5. Make the story more testable and implementable than the current version
+
+Return a JSON object with this structure:
+{{
+  "title": "Improved title of the user story",
+  "story": "As a [user], I want [goal] so that [benefit]",
+  "acceptance_criteria": [
+    "Given [context], when [action], then [outcome]",
+    "Given [failure scenario], when [action], then [error handling]", 
+    "Given [edge case], when [action], then [expected behavior]"
+  ]"""
+
+        if request.include_metadata:
+            regeneration_prompt += """,
+  "metadata": {
+    "priority": "Low|Medium|High",
+    "type": "Feature|Bug|Chore|Enhancement",
+    "component": "form|admin|ui|api|etc",
+    "effort": "1 day|3 days|1 week|etc",
+    "persona": "End User|Admin|Support Agent|Engineer|Designer|QA|Customer|Other",
+    "persona_other": "custom persona if Other selected"
+  }"""
+
+        regeneration_prompt += """
+}
+
+Focus on making this story better than the original by being more specific, comprehensive, and actionable."""
+
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a senior Product Owner focused on creating high-quality, actionable user stories. Improve the given story while maintaining its core intent."},
+                {"role": "user", "content": regeneration_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=2000
+        )
+        
+        content = response.choices[0].message.content
+        print(f"DEBUG: Raw regeneration response: {content}")
+        
+        try:
+            start_idx = content.find('{')
+            end_idx = content.rfind('}') + 1
+            if start_idx != -1 and end_idx != 0:
+                json_str = content[start_idx:end_idx]
+                print(f"DEBUG: Extracted JSON: {json_str}")
+                result = json.loads(json_str)
+                print(f"DEBUG: Parsed regenerated story: {result}")
+                
+                if not all(key in result for key in ['title', 'story', 'acceptance_criteria']):
+                    raise ValueError("Missing required fields in regenerated story")
+                
+                return UserStory(**result)
+            else:
+                raise ValueError("No JSON found in response")
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"DEBUG: JSON parsing failed: {e}")
+            return UserStory(
+                title=f"Improved: {request.current_story.title}",
+                story=request.current_story.story,
+                acceptance_criteria=[
+                    "Given the system is operational, when the user performs the action, then the expected outcome occurs",
+                    "Given an error condition, when the user attempts the action, then appropriate error handling is provided",
+                    "Given edge case scenarios, when the user interacts with the feature, then the system behaves predictably"
+                ],
+                metadata=request.current_story.metadata
+            )
         
     except openai.OpenAIError as e:
         raise HTTPException(status_code=500, detail=f"OpenAI API error: {str(e)}")
