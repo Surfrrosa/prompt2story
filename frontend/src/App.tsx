@@ -151,7 +151,7 @@ function App() {
       await navigator.clipboard.writeText(markdown)
       setCopySuccess('Copied to clipboard!')
       setTimeout(() => setCopySuccess(null), 3000)
-    } catch (err) {
+    } catch {
       setCopySuccess('Failed to copy')
       setTimeout(() => setCopySuccess(null), 3000)
     }
@@ -1100,7 +1100,7 @@ function App() {
                   <Button
                     onClick={() => handleExportWithModal(handleCopyToClipboard)}
                     variant="outline"
-                    className="flex-1 bg-charcoal-light border-charcoal-light text-pure-white hover:bg-charcoal-lighter hover:border-soft-gray"
+                    className="flex-1 bg-charcoal-light border-charcoal-light text-pure-white hover:bg-charcoal-lighter hover:border-soft-gray hover:text-pure-white"
                   >
                     <Copy className="mr-2 h-4 w-4" />
                     Copy to Clipboard
@@ -1108,7 +1108,7 @@ function App() {
                   <Button
                     onClick={() => handleExportWithModal(handleDownloadMarkdown)}
                     variant="outline"
-                    className="flex-1 bg-charcoal-light border-charcoal-light text-pure-white hover:bg-charcoal-lighter hover:border-soft-gray"
+                    className="flex-1 bg-charcoal-light border-charcoal-light text-pure-white hover:bg-charcoal-lighter hover:border-soft-gray hover:text-pure-white"
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download as Markdown
@@ -1116,7 +1116,7 @@ function App() {
                   <Button
                     onClick={() => handleExportWithModal(handleDownloadJSON)}
                     variant="outline"
-                    className="flex-1 bg-charcoal-light border-charcoal-light text-pure-white hover:bg-charcoal-lighter hover:border-soft-gray"
+                    className="flex-1 bg-charcoal-light border-charcoal-light text-pure-white hover:bg-charcoal-lighter hover:border-soft-gray hover:text-pure-white"
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download as JSON
@@ -1179,7 +1179,7 @@ function App() {
                     <Button
                       onClick={handleExportDecline}
                       variant="outline"
-                      className="flex-1 bg-charcoal-light border-charcoal-light text-pure-white hover:bg-charcoal-lighter hover:border-soft-gray"
+                      className="flex-1 bg-charcoal-light border-charcoal-light text-pure-white hover:bg-charcoal-lighter hover:border-soft-gray hover:text-pure-white"
                     >
                       No thanks
                     </Button>
