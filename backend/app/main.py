@@ -106,21 +106,16 @@ async def generate_user_stories(input_data: TextInput):
         )
         
         content = response.choices[0].message.content
-        print(f"DEBUG: Raw AI response: {content}")
         
         try:
             start_idx = content.find('{')
             end_idx = content.rfind('}') + 1
             if start_idx != -1 and end_idx != 0:
                 json_str = content[start_idx:end_idx]
-                print(f"DEBUG: Extracted JSON: {json_str}")
                 result = json.loads(json_str)
-                print(f"DEBUG: Parsed result: {result}")
-                print(f"DEBUG: First story metadata: {result.get('user_stories', [{}])[0].get('metadata', 'NOT_FOUND')}")
             else:
                 raise ValueError("No JSON found in response")
         except (json.JSONDecodeError, ValueError) as e:
-            print(f"DEBUG: JSON parsing failed: {e}")
             result = {
                 "user_stories": [
                     {
@@ -269,21 +264,16 @@ async def analyze_design(
             )
         
         content = response.choices[0].message.content
-        print(f"DEBUG: Raw AI response: {content}")
         
         try:
             start_idx = content.find('{')
             end_idx = content.rfind('}') + 1
             if start_idx != -1 and end_idx != 0:
                 json_str = content[start_idx:end_idx]
-                print(f"DEBUG: Extracted JSON: {json_str}")
                 result = json.loads(json_str)
-                print(f"DEBUG: Parsed result: {result}")
-                print(f"DEBUG: First story metadata: {result.get('user_stories', [{}])[0].get('metadata', 'NOT_FOUND')}")
             else:
                 raise ValueError("No JSON found in response")
         except (json.JSONDecodeError, ValueError) as e:
-            print(f"DEBUG: JSON parsing failed: {e}")
             result = {
                 "user_stories": [
                     {
