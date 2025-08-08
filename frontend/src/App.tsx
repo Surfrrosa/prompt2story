@@ -636,7 +636,10 @@ function App() {
                       <input
                         type="checkbox"
                         checked={includeMetadata}
-                        onChange={(e) => setIncludeMetadata(e.target.checked)}
+                        onChange={(e) => {
+                          console.log('Checkbox onChange called:', e.target.checked);
+                          setIncludeMetadata(e.target.checked);
+                        }}
                         className="w-4 h-4 text-vivid-purple bg-charcoal-light border-soft-gray rounded focus:ring-vivid-purple focus:ring-2"
                         disabled={isLoading}
                       />
@@ -806,7 +809,10 @@ function App() {
                       <input
                         type="checkbox"
                         checked={includeMetadata}
-                        onChange={(e) => setIncludeMetadata(e.target.checked)}
+                        onChange={(e) => {
+                          console.log('Checkbox onChange called:', e.target.checked);
+                          setIncludeMetadata(e.target.checked);
+                        }}
                         className="w-4 h-4 text-vivid-purple bg-charcoal-light border-soft-gray rounded focus:ring-vivid-purple focus:ring-2"
                         disabled={isProcessingFile}
                       />
