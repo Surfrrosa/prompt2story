@@ -1,0 +1,14 @@
+name: Slack Ping
+on:
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post hello to Slack
+        run: |
+          payload='{"text":":wave: Slack wiring works from GitHub Actions (#'${{ github.run_number }}')."}'
+          curl -sS -X POST -H 'Content-type: application/json' \
+            --data "$payload" \
+            "${{ secrets.SLACK_WEBHOOK_URL }}"

@@ -78,6 +78,11 @@ jobs:
         with:
           name: watchdog-failure-${{ github.run_number }}
           path: ops/artifacts/
+      - name: Slack alert (watchdog breach)
+        if: failure()
+        run: |
+          payload='{"text":":rotating_light: *Hourly watchdog breach* — run: '${{ github.server_url }}'/'${{ github.repository }}'/actions/runs/'${{ github.run_id }}'"}'
+          curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "${{ secrets.SLACK_WEBHOOK_URL }}"
       - name: Notify Slack on Failure
         if: failure() && secrets.SLACK_WEBHOOK_URL
         uses: 8398a7/action-slack@v3
