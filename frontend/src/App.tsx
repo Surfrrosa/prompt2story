@@ -151,7 +151,7 @@ function App() {
       await navigator.clipboard.writeText(markdown)
       setCopySuccess('Copied to clipboard!')
       setTimeout(() => setCopySuccess(null), 3000)
-    } catch (err) {
+    } catch {
       setCopySuccess('Failed to copy')
       setTimeout(() => setCopySuccess(null), 3000)
     }

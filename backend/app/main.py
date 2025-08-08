@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class Metadata(BaseModel):
     priority: str
     type: str
@@ -19,6 +20,7 @@ class Metadata(BaseModel):
     effort: str
     persona: str
     persona_other: Optional[str] = None
+
 
 app = FastAPI(title="User Story Generator API")
 
@@ -32,6 +34,7 @@ app.add_middleware(
 )
 
 openai_client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 
 def load_prompt():
     try:
@@ -52,6 +55,7 @@ Return a JSON object with this structure:
   "edge_cases": ["Description of edge case"]
 }"""
 
+
 class TextInput(BaseModel):
     text: str
     include_metadata: bool = False
@@ -59,46 +63,77 @@ class TextInput(BaseModel):
     include_advanced_criteria: bool = True
     expand_all_components: bool = True
 
+
 class UserStory(BaseModel):
     title: str
     story: str
     acceptance_criteria: list[str]
     metadata: Optional[Metadata] = None
 
+
 class GenerationResponse(BaseModel):
     user_stories: list[UserStory]
     edge_cases: list[str]
+
 
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
 
+
 @app.post("/generate-user-stories", response_model=GenerationResponse)
 async def generate_user_stories(input_data: TextInput):
     try:
         if not input_data.text.strip():
-            raise HTTPException(status_code=400, detail="Input text cannot be empty")
-        
+            raise HTTPException(
+                status_code=400, detail="Input text cannot be empty"
+            )
+
         prompt_template = load_prompt()
-        
+
         if input_data.include_metadata:
-            prompt_template += "\n\nIMPORTANT: Include detailed metadata in your response with priority (Low/Medium/High), type (Feature/Bug/Chore/Enhancement), component, effort, and persona (End User/Admin/Support Agent/Engineer/Designer/QA/Customer/Other) fields for each user story."
-        
+            prompt_template += (
+                "\n\nIMPORTANT: Include detailed metadata in your response "
+                "with priority (Low/Medium/High), type "
+                "(Feature/Bug/Chore/Enhancement), component, effort, and "
+                "persona (End User/Admin/Support Agent/Engineer/Designer/"
+                "QA/Customer/Other) fields for each user story."
+            )
+
         if input_data.infer_edge_cases:
-            prompt_template += "\n\nEDGE CASES: Infer and include comprehensive edge cases, boundary conditions, and error scenarios for each user story."
-        
+            prompt_template += (
+                "\n\nEDGE CASES: Infer and include comprehensive edge cases, "
+                "boundary conditions, and error scenarios for each user story."
+            )
+
         if input_data.include_advanced_criteria:
-            prompt_template += "\n\nADVANCED CRITERIA: Generate 5-7 detailed acceptance criteria per story covering normal flow, error handling, edge cases, different states, accessibility, and performance considerations."
-        
+            prompt_template += (
+                "\n\nADVANCED CRITERIA: Generate 5-7 detailed acceptance "
+                "criteria per story covering normal flow, error handling, "
+                "edge cases, different states, accessibility, and "
+                "performance considerations."
+            )
+
         if input_data.expand_all_components:
-            prompt_template += "\n\nCOMPREHENSIVE ANALYSIS: Scan and analyze ALL mentioned components, features, and requirements. Do not limit analysis arbitrarily - be thorough and complete."
-        
-        full_prompt = f"{prompt_template}\n\nUnstructured text to analyze:\n{input_data.text}"
+            prompt_template += (
+                "\n\nCOMPREHENSIVE ANALYSIS: Scan and analyze ALL mentioned "
+                "components, features, and requirements. Do not limit "
+                "analysis arbitrarily - be thorough and complete."
+            )
+
+        full_prompt = (
+            f"{prompt_template}\n\nUnstructured text to analyze:\n"
+            f"{input_data.text}"
+        )
         
         response = openai_client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are a senior Product Owner and business analyst. Be thorough and comprehensive in your analysis."},
+                {
+                    "role": "system",
+                    "content": "You are a senior Product Owner and business "
+                    "analyst. Be thorough and comprehensive in your analysis."
+                },
                 {"role": "user", "content": full_prompt}
             ],
             temperature=0.7,
@@ -116,7 +151,9 @@ async def generate_user_stories(input_data: TextInput):
                 print(f"DEBUG: Extracted JSON: {json_str}")
                 result = json.loads(json_str)
                 print(f"DEBUG: Parsed result: {result}")
-                print(f"DEBUG: First story metadata: {result.get('user_stories', [{}])[0].get('metadata', 'NOT_FOUND')}")
+                first_story = result.get('user_stories', [{}])[0]
+                metadata = first_story.get('metadata', 'NOT_FOUND')
+                print(f"DEBUG: First story metadata: {metadata}")
             else:
                 raise ValueError("No JSON found in response")
         except (json.JSONDecodeError, ValueError) as e:
@@ -125,26 +162,44 @@ async def generate_user_stories(input_data: TextInput):
                 "user_stories": [
                     {
                         "title": "Generated User Story",
-                        "story": content[:200] + "..." if len(content) > 200 else content,
-                        "acceptance_criteria": ["Please review the generated content for specific criteria"]
+                        "story": (
+                            content[:200] + "..." if len(content) > 200
+                            else content
+                        ),
+                        "acceptance_criteria": [
+                            "Please review the generated content for "
+                            "specific criteria"
+                        ]
                     }
                 ],
-                "edge_cases": ["Please review the generated content for edge cases"]
+                "edge_cases": [
+                    "Please review the generated content for edge cases"
+                ]
             }
         
         return GenerationResponse(**result)
         
     except openai.OpenAIError as e:
-        raise HTTPException(status_code=500, detail=f"OpenAI API error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"OpenAI API error: {str(e)}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}"
+        )
+
 
 def load_design_prompt():
     try:
         with open("prompts/design_analysis_prompt.md", "r") as f:
             return f.read()
     except FileNotFoundError:
-        return """Analyze this design mockup and generate user stories based on the UI elements you can identify. Focus on interactive elements like buttons, forms, navigation, and user workflows."""
+        return (
+            "Analyze this design mockup and generate user stories based on "
+            "the UI elements you can identify. Focus on interactive elements "
+            "like buttons, forms, navigation, and user workflows."
+        )
+
 
 def extract_pdf_text(file_content: bytes) -> str:
     """Extract text from PDF file using PyPDF2 with robust error handling."""
@@ -153,12 +208,16 @@ def extract_pdf_text(file_content: bytes) -> str:
         
         try:
             pdf_reader = PyPDF2.PdfReader(pdf_file, strict=False)
-        except Exception as e:
+        except Exception:
             pdf_file.seek(0)
             try:
                 pdf_reader = PyPDF2.PdfReader(pdf_file)
             except Exception:
-                raise HTTPException(status_code=400, detail="PDF file appears to be corrupted or in an unsupported format")
+                raise HTTPException(
+                    status_code=400,
+                    detail="PDF file appears to be corrupted or in an "
+                    "unsupported format"
+                )
         
         text = ""
         try:
@@ -167,20 +226,29 @@ def extract_pdf_text(file_content: bytes) -> str:
                     page_text = page.extract_text()
                     if page_text:
                         text += page_text + "\n"
-                except Exception as e:
+                except Exception:
                     continue
-        except Exception as e:
-            raise HTTPException(status_code=400, detail="Unable to extract text from PDF pages")
+        except Exception:
+            raise HTTPException(
+                status_code=400, detail="Unable to extract text from PDF pages"
+            )
         
         if not text.strip():
-            raise HTTPException(status_code=400, detail="PDF file appears to be empty or contains no extractable text")
+            raise HTTPException(
+                status_code=400,
+                detail="PDF file appears to be empty or contains no "
+                "extractable text"
+            )
             
         return text.strip()
         
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"PDF processing error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"PDF processing error: {str(e)}"
+        )
+
 
 @app.post("/analyze-design", response_model=GenerationResponse)
 async def analyze_design(
@@ -191,18 +259,29 @@ async def analyze_design(
     expand_all_components: bool = True
 ):
     try:
-        if not file.content_type or not file.content_type.startswith(('image/', 'application/pdf')):
-            raise HTTPException(status_code=400, detail="Only image files (PNG, JPG) and PDF files are supported")
+        if not file.content_type or not file.content_type.startswith(
+            ('image/', 'application/pdf')
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Only image files (PNG, JPG) and PDF files are supported"
+            )
         
         file_content = await file.read()
         if len(file_content) > 10 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="File size must be less than 10MB")
+            raise HTTPException(
+                status_code=400, detail="File size must be less than 10MB"
+            )
         
         if file.content_type == 'application/pdf':
             pdf_text = extract_pdf_text(file_content)
             
             if not pdf_text.strip():
-                raise HTTPException(status_code=400, detail="PDF file appears to be empty or contains no extractable text")
+                raise HTTPException(
+                status_code=400,
+                detail="PDF file appears to be empty or contains no "
+                "extractable text"
+            )
             
             prompt_template = load_prompt()
             
@@ -279,7 +358,9 @@ async def analyze_design(
                 print(f"DEBUG: Extracted JSON: {json_str}")
                 result = json.loads(json_str)
                 print(f"DEBUG: Parsed result: {result}")
-                print(f"DEBUG: First story metadata: {result.get('user_stories', [{}])[0].get('metadata', 'NOT_FOUND')}")
+                first_story = result.get('user_stories', [{}])[0]
+                metadata = first_story.get('metadata', 'NOT_FOUND')
+                print(f"DEBUG: First story metadata: {metadata}")
             else:
                 raise ValueError("No JSON found in response")
         except (json.JSONDecodeError, ValueError) as e:
@@ -288,16 +369,28 @@ async def analyze_design(
                 "user_stories": [
                     {
                         "title": "Document Analysis Generated",
-                        "story": content[:200] + "..." if len(content) > 200 else content,
-                        "acceptance_criteria": ["Please review the generated content for specific criteria"]
+                        "story": (
+                            content[:200] + "..." if len(content) > 200
+                            else content
+                        ),
+                        "acceptance_criteria": [
+                            "Please review the generated content for "
+                            "specific criteria"
+                        ]
                     }
                 ],
-                "edge_cases": ["Please review the generated content for edge cases"]
+                "edge_cases": [
+                    "Please review the generated content for edge cases"
+                ]
             }
         
         return GenerationResponse(**result)
         
     except openai.OpenAIError as e:
-        raise HTTPException(status_code=500, detail=f"OpenAI API error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"OpenAI API error: {str(e)}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}"
+        )
