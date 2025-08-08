@@ -34,6 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Daily Health Check
+        id: health_check
         run: npm run ops:health
         working-directory: frontend
       - name: Upload artifacts
@@ -42,6 +43,25 @@ jobs:
         with:
           name: health-check-failure-${{ github.run_number }}
           path: ops/artifacts/
+      - name: Notify Slack on Failure
+        if: failure() && secrets.SLACK_WEBHOOK_URL
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#devin-alerts'
+          text: |
+            🚨 **Daily Health Check Failed** 
+            
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Run:** ${{ github.run_number }}
+            **Time:** ${{ github.event.head_commit.timestamp }}
+            
+            Health check thresholds breached. Check artifacts for details.
+            
+            **Action Required:** Investigate prompt2story.com availability and performance.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   hourly-watchdog:
     if: github.event.schedule == '0 * * * *' || github.event.inputs.check_type == 'hourly'
@@ -49,6 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Hourly Watchdog
+        id: watchdog_check
         run: npm run ops:hourly
         working-directory: frontend
       - name: Upload artifacts
@@ -57,6 +78,25 @@ jobs:
         with:
           name: watchdog-failure-${{ github.run_number }}
           path: ops/artifacts/
+      - name: Notify Slack on Failure
+        if: failure() && secrets.SLACK_WEBHOOK_URL
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#devin-alerts'
+          text: |
+            🔥 **URGENT: Hourly Watchdog Alert** 
+            
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Run:** ${{ github.run_number }}
+            **Time:** ${{ github.event.head_commit.timestamp }}
+            
+            Critical system thresholds breached during hourly monitoring.
+            
+            **Action Required:** Immediate investigation needed for prompt2story.com.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   weekly-performance:
     if: github.event.schedule == '0 8 * * 1' || github.event.inputs.check_type == 'weekly'
@@ -70,6 +110,7 @@ jobs:
       - name: Install bc for calculations
         run: sudo apt-get update && sudo apt-get install -y bc
       - name: Run Weekly Performance Check
+        id: perf_check
         run: npm run ops:weekly
         working-directory: frontend
       - name: Upload Lighthouse artifacts
@@ -77,6 +118,25 @@ jobs:
         with:
           name: lighthouse-report-${{ github.run_number }}
           path: ops/artifacts/
+      - name: Notify Slack on Failure
+        if: failure() && secrets.SLACK_WEBHOOK_URL
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#devin-alerts'
+          text: |
+            📊 **Weekly Performance Check Failed** 
+            
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Run:** ${{ github.run_number }}
+            **Time:** ${{ github.event.head_commit.timestamp }}
+            
+            Performance score below 90 threshold or Lighthouse checks failed.
+            
+            **Action Required:** Review performance metrics and optimize prompt2story.com.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   monthly-resilience:
     if: github.event.schedule == '0 9 1 * *' || github.event.inputs.check_type == 'monthly'
@@ -88,6 +148,7 @@ jobs:
         with:
           node-version: '18'
       - name: Run Monthly Resilience Test
+        id: resilience_check
         run: npm run ops:monthly
         working-directory: frontend
       - name: Upload load test artifacts
@@ -95,3 +156,22 @@ jobs:
         with:
           name: loadtest-report-${{ github.run_number }}
           path: ops/artifacts/
+      - name: Notify Slack on Failure
+        if: failure() && secrets.SLACK_WEBHOOK_URL
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#devin-alerts'
+          text: |
+            🧪 **Monthly Resilience Test Failed** 
+            
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Run:** ${{ github.run_number }}
+            **Time:** ${{ github.event.head_commit.timestamp }}
+            
+            Load testing or backup restoration checks failed.
+            
+            **Action Required:** Review system resilience and disaster recovery procedures.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
