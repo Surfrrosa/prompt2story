@@ -26,85 +26,57 @@ on:
 env:
   BASE_URL: https://prompt2story.com
   API_URL: https://app-huypwpho.fly.dev
+  API_URL_STAGING: https://app-huypwpho.fly.dev
 
 jobs:
   daily-health:
-    if: github.event.schedule == '30 7 * * *' || github.event.inputs.check_type == 'health'
+    if: github.event.inputs.check_type == 'health' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Make scripts executable
+        run: chmod +x ops/*.sh
       - name: Run Daily Health Check
         id: health_check
-        run: npm run ops:health
-        working-directory: frontend
+        run: ./health_check.sh
+        working-directory: ops
       - name: Upload artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: health-check-failure-${{ github.run_number }}
           path: ops/artifacts/
-      - name: Notify Slack on Failure
-        if: failure() && secrets.SLACK_WEBHOOK_URL
-        uses: 8398a7/action-slack@v3
-        with:
-          status: failure
-          channel: '#devin-alerts'
-          text: |
-            🚨 **Daily Health Check Failed** 
-            
-            **Repository:** ${{ github.repository }}
-            **Branch:** ${{ github.ref_name }}
-            **Run:** ${{ github.run_number }}
-            **Time:** ${{ github.event.head_commit.timestamp }}
-            
-            Health check thresholds breached. Check artifacts for details.
-            
-            **Action Required:** Investigate prompt2story.com availability and performance.
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Slack alert on failure
+        if: failure()
+        run: |
+          payload='{"text":":rotating_light: *Daily health check failed* — run: '${{ github.server_url }}'/'${{ github.repository }}'/actions/runs/'${{ github.run_id }}'"}'
+          curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "${{ secrets.SLACK_WEBHOOK_URL }}"
 
   hourly-watchdog:
-    if: github.event.schedule == '0 * * * *' || github.event.inputs.check_type == 'hourly'
+    if: github.event.inputs.check_type == 'hourly' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Make scripts executable
+        run: chmod +x ops/*.sh
       - name: Run Hourly Watchdog
         id: watchdog_check
-        run: npm run ops:hourly
-        working-directory: frontend
+        run: ./hourly_watchdog.sh
+        working-directory: ops
       - name: Upload artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: watchdog-failure-${{ github.run_number }}
           path: ops/artifacts/
-      - name: Slack alert (watchdog breach)
+      - name: Slack alert on failure
         if: failure()
         run: |
           payload='{"text":":rotating_light: *Hourly watchdog breach* — run: '${{ github.server_url }}'/'${{ github.repository }}'/actions/runs/'${{ github.run_id }}'"}'
           curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "${{ secrets.SLACK_WEBHOOK_URL }}"
-      - name: Notify Slack on Failure
-        if: failure() && secrets.SLACK_WEBHOOK_URL
-        uses: 8398a7/action-slack@v3
-        with:
-          status: failure
-          channel: '#devin-alerts'
-          text: |
-            🔥 **URGENT: Hourly Watchdog Alert** 
-            
-            **Repository:** ${{ github.repository }}
-            **Branch:** ${{ github.ref_name }}
-            **Run:** ${{ github.run_number }}
-            **Time:** ${{ github.event.head_commit.timestamp }}
-            
-            Critical system thresholds breached during hourly monitoring.
-            
-            **Action Required:** Immediate investigation needed for prompt2story.com.
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   weekly-performance:
-    if: github.event.schedule == '0 8 * * 1' || github.event.inputs.check_type == 'weekly'
+    if: github.event.inputs.check_type == 'weekly' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -114,37 +86,27 @@ jobs:
           node-version: '18'
       - name: Install bc for calculations
         run: sudo apt-get update && sudo apt-get install -y bc
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Make scripts executable
+        run: chmod +x ops/*.sh
       - name: Run Weekly Performance Check
         id: perf_check
-        run: npm run ops:weekly
-        working-directory: frontend
+        run: ./weekly_perf.sh
+        working-directory: ops
       - name: Upload Lighthouse artifacts
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-report-${{ github.run_number }}
           path: ops/artifacts/
-      - name: Notify Slack on Failure
-        if: failure() && secrets.SLACK_WEBHOOK_URL
-        uses: 8398a7/action-slack@v3
-        with:
-          status: failure
-          channel: '#devin-alerts'
-          text: |
-            📊 **Weekly Performance Check Failed** 
-            
-            **Repository:** ${{ github.repository }}
-            **Branch:** ${{ github.ref_name }}
-            **Run:** ${{ github.run_number }}
-            **Time:** ${{ github.event.head_commit.timestamp }}
-            
-            Performance score below 90 threshold or Lighthouse checks failed.
-            
-            **Action Required:** Review performance metrics and optimize prompt2story.com.
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Slack alert on failure
+        if: failure()
+        run: |
+          payload='{"text":":rotating_light: *Weekly performance check failed* — run: '${{ github.server_url }}'/'${{ github.repository }}'/actions/runs/'${{ github.run_id }}'"}'
+          curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "${{ secrets.SLACK_WEBHOOK_URL }}"
 
   monthly-resilience:
-    if: github.event.schedule == '0 9 1 * *' || github.event.inputs.check_type == 'monthly'
+    if: github.event.inputs.check_type == 'monthly' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -152,31 +114,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+      - name: Make scripts executable
+        run: chmod +x ops/*.sh
       - name: Run Monthly Resilience Test
         id: resilience_check
-        run: npm run ops:monthly
-        working-directory: frontend
+        run: ./monthly_resilience.sh
+        working-directory: ops
       - name: Upload load test artifacts
         uses: actions/upload-artifact@v4
         with:
           name: loadtest-report-${{ github.run_number }}
           path: ops/artifacts/
-      - name: Notify Slack on Failure
-        if: failure() && secrets.SLACK_WEBHOOK_URL
-        uses: 8398a7/action-slack@v3
-        with:
-          status: failure
-          channel: '#devin-alerts'
-          text: |
-            🧪 **Monthly Resilience Test Failed** 
-            
-            **Repository:** ${{ github.repository }}
-            **Branch:** ${{ github.ref_name }}
-            **Run:** ${{ github.run_number }}
-            **Time:** ${{ github.event.head_commit.timestamp }}
-            
-            Load testing or backup restoration checks failed.
-            
-            **Action Required:** Review system resilience and disaster recovery procedures.
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Slack alert on failure
+        if: failure()
+        run: |
+          payload='{"text":":rotating_light: *Monthly resilience test failed* — run: '${{ github.server_url }}'/'${{ github.repository }}'/actions/runs/'${{ github.run_id }}'"}'
+          curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "${{ secrets.SLACK_WEBHOOK_URL }}"
