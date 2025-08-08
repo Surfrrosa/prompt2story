@@ -48,7 +48,7 @@ jobs:
         uses: 8398a7/action-slack@v3
         with:
           status: failure
-          channel: '#alerts'
+          channel: '#devin-alerts'
           text: |
             🚨 **Daily Health Check Failed** 
             
@@ -83,7 +83,7 @@ jobs:
         uses: 8398a7/action-slack@v3
         with:
           status: failure
-          channel: '#alerts'
+          channel: '#devin-alerts'
           text: |
             🔥 **URGENT: Hourly Watchdog Alert** 
             
@@ -123,7 +123,7 @@ jobs:
         uses: 8398a7/action-slack@v3
         with:
           status: failure
-          channel: '#alerts'
+          channel: '#devin-alerts'
           text: |
             📊 **Weekly Performance Check Failed** 
             
@@ -161,7 +161,7 @@ jobs:
         uses: 8398a7/action-slack@v3
         with:
           status: failure
-          channel: '#alerts'
+          channel: '#devin-alerts'
           text: |
             🧪 **Monthly Resilience Test Failed** 
             
