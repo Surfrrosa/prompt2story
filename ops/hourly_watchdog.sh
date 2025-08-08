@@ -1,3 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-./ops/health_check.sh
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+"$SCRIPT_DIR/health_check.sh"
