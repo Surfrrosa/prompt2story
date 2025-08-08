@@ -30,7 +30,7 @@ env:
 
 jobs:
   daily-health:
-    if: github.event.inputs.check_type == 'health' || github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || github.event.inputs.check_type == 'health'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
           curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "${{ secrets.SLACK_WEBHOOK_URL }}"
 
   hourly-watchdog:
-    if: github.event.inputs.check_type == 'hourly' || github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || github.event.inputs.check_type == 'hourly'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -76,7 +76,7 @@ jobs:
           curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "${{ secrets.SLACK_WEBHOOK_URL }}"
 
   weekly-performance:
-    if: github.event.inputs.check_type == 'weekly' || github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || github.event.inputs.check_type == 'weekly'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -106,7 +106,7 @@ jobs:
           curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "${{ secrets.SLACK_WEBHOOK_URL }}"
 
   monthly-resilience:
-    if: github.event.inputs.check_type == 'monthly' || github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || github.event.inputs.check_type == 'monthly'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
