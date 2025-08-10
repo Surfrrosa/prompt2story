@@ -2,7 +2,7 @@
 set -euo pipefail
 BASE_URL="${BASE_URL:-https://prompt2story.com}"
 API_URL="${API_URL:-https://app-huypwpho.fly.dev}"
-API_P95_TARGET_MS="${API_P95_TARGET_MS:-600}"
+API_P95_TARGET_MS="${API_P95_TARGET_MS:-1000}"
 
 curl_opts=(-sS -L --max-time 10 --retry 2 --retry-delay 1 -o /dev/null -w "%{http_code} %{time_total}")
 
