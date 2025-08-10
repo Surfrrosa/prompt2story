@@ -13,7 +13,7 @@ To enable Slack notifications for observability monitoring alerts, you need to a
    - Copy the webhook URL
 
 2. **Add GitHub Secret:**
-   - Go to your GitHub repository: `https://github.com/Surfrrosa/surfrrosa`
+   - Go to your GitHub repository: `https://github.com/Surfrrosa/prompt2story`
    - Navigate to Settings → Secrets and variables → Actions
    - Click "New repository secret"
    - Name: `SLACK_WEBHOOK_URL`
