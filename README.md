@@ -5,7 +5,7 @@
 
 [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Available-brightgreen)](https://surfrrosa-git-devin-1754832907-5c631a-shainas-projects-adbfd2be.vercel.app/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Made with](https://img.shields.io/badge/Made_with-❤️_and_AI-red.svg)](https://github.com/Surfrrosa/surfrrosa)
+[![Made with](https://img.shields.io/badge/Made_with-❤️_and_AI-red.svg)](https://github.com/Surfrrosa/prompt2story)
 
 ![Prompt2Story Interface](screenshots/main-interface.png)
 
@@ -241,8 +241,8 @@ npm install
 
 ### Getting Help
 
-- 🐛 [Report bugs](https://github.com/Surfrrosa/surfrrosa/issues)
-- 💬 [Ask questions](https://github.com/Surfrrosa/surfrrosa/discussions)
+- 🐛 [Report bugs](https://github.com/Surfrrosa/prompt2story/issues)
+- 💬 [Ask questions](https://github.com/Surfrrosa/prompt2story/discussions)
 - 📧 [Contact support](mailto:support@prompt2story.com)
 
 ## 🤝 Contributing
@@ -304,6 +304,6 @@ To report security vulnerabilities, please email [security@prompt2story.com](mai
 
 **Made with ❤️ by [@Surfrrosa](https://github.com/Surfrrosa)**
 
-[⭐ Star this repo](https://github.com/Surfrrosa/surfrrosa) • [🐛 Report Bug](https://github.com/Surfrrosa/surfrrosa/issues) • [✨ Request Feature](https://github.com/Surfrrosa/surfrrosa/issues)
+[⭐ Star this repo](https://github.com/Surfrrosa/prompt2story) • [🐛 Report Bug](https://github.com/Surfrrosa/prompt2story/issues) • [✨ Request Feature](https://github.com/Surfrrosa/prompt2story/issues)
 
 </div>
