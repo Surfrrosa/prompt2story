@@ -20,9 +20,9 @@ on:
           - monthly
 
 env:
-  BASE_URL: https://prompt2story.com
-  API_URL: https://app-huypwpho.fly.dev
-  API_URL_STAGING: https://app-huypwpho.fly.dev
+  BASE_URL: https://your-frontend-domain.com
+  API_URL: https://your-backend-domain.com
+  API_URL_STAGING: https://your-staging-backend-domain.com
 
 jobs:
   daily-health:

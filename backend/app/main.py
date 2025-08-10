@@ -111,21 +111,16 @@ async def generate_user_stories(input_data: TextInput):
         )
         
         content = response.choices[0].message.content
-        print(f"DEBUG: Raw AI response: {content}")
         
         try:
             start_idx = content.find('{')
             end_idx = content.rfind('}') + 1
             if start_idx != -1 and end_idx != 0:
                 json_str = content[start_idx:end_idx]
-                print(f"DEBUG: Extracted JSON: {json_str}")
                 result = json.loads(json_str)
-                print(f"DEBUG: Parsed result: {result}")
-                print(f"DEBUG: First story metadata: {result.get('user_stories', [{}])[0].get('metadata', 'NOT_FOUND')}")
             else:
                 raise ValueError("No JSON found in response")
         except (json.JSONDecodeError, ValueError) as e:
-            print(f"DEBUG: JSON parsing failed: {e}")
             result = {
                 "user_stories": [
                     {
@@ -204,16 +199,13 @@ Focus on making this story better than the original by being more specific, comp
         )
         
         content = response.choices[0].message.content
-        print(f"DEBUG: Raw regeneration response: {content}")
         
         try:
             start_idx = content.find('{')
             end_idx = content.rfind('}') + 1
             if start_idx != -1 and end_idx != 0:
                 json_str = content[start_idx:end_idx]
-                print(f"DEBUG: Extracted JSON: {json_str}")
                 result = json.loads(json_str)
-                print(f"DEBUG: Parsed regenerated story: {result}")
                 
                 if not all(key in result for key in ['title', 'story', 'acceptance_criteria']):
                     raise ValueError("Missing required fields in regenerated story")
@@ -222,7 +214,6 @@ Focus on making this story better than the original by being more specific, comp
             else:
                 raise ValueError("No JSON found in response")
         except (json.JSONDecodeError, ValueError) as e:
-            print(f"DEBUG: JSON parsing failed: {e}")
             return UserStory(
                 title=f"Improved: {request.current_story.title}",
                 story=request.current_story.story,
@@ -369,21 +360,16 @@ async def analyze_design(
             )
         
         content = response.choices[0].message.content
-        print(f"DEBUG: Raw AI response: {content}")
         
         try:
             start_idx = content.find('{')
             end_idx = content.rfind('}') + 1
             if start_idx != -1 and end_idx != 0:
                 json_str = content[start_idx:end_idx]
-                print(f"DEBUG: Extracted JSON: {json_str}")
                 result = json.loads(json_str)
-                print(f"DEBUG: Parsed result: {result}")
-                print(f"DEBUG: First story metadata: {result.get('user_stories', [{}])[0].get('metadata', 'NOT_FOUND')}")
             else:
                 raise ValueError("No JSON found in response")
         except (json.JSONDecodeError, ValueError) as e:
-            print(f"DEBUG: JSON parsing failed: {e}")
             result = {
                 "user_stories": [
                     {

@@ -5,7 +5,7 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 ARTIFACT_DIR="ops/artifacts/lighthouse_${TIMESTAMP}"
 mkdir -p "$ARTIFACT_DIR"
 
-npx lhci autorun --collect.url=https://prompt2story.com --upload.target=filesystem --upload.outputDir="$ARTIFACT_DIR" --assert.preset=lighthouse:recommended || true
+npx lhci autorun --collect.url=https://your-frontend-domain.com --upload.target=filesystem --upload.outputDir="$ARTIFACT_DIR" --assert.preset=lighthouse:recommended || true
 
 if [ -f "$ARTIFACT_DIR/manifest.json" ]; then
   PERF_SCORE=$(find "$ARTIFACT_DIR" -name "*.json" -not -name "manifest.json" -exec cat {} \; | head -1 | grep -o '"performance":{"score":[0-9.]*' | cut -d: -f3 | awk '{print $1 * 100}' || echo "0")
