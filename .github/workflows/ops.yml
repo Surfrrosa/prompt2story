@@ -2,10 +2,6 @@ name: Observability and Performance Monitoring
 
 on:
   schedule:
-    # Daily health check at 7:30 AM UTC
-    - cron: '30 7 * * *'
-    # Hourly watchdog at top of every hour
-    - cron: '0 * * * *'
     # Weekly performance check on Mondays at 8:00 AM UTC
     - cron: '0 8 * * 1'
     # Monthly resilience drill on 1st at 9:00 AM UTC
