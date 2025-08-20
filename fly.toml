@@ -1,5 +1,5 @@
 # Fly.io configuration for backend deployment
-app = "prompt2story-backend"
+app = "prompt2story"
 primary_region = "iad"
 
 [build]
@@ -21,4 +21,4 @@ primary_region = "iad"
   memory_mb = 512
 
 [deploy]
-  release_command = "poetry install --only=main"
+  release_command = "poetry install --only=main --no-root"

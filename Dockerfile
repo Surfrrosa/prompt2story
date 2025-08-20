@@ -10,16 +10,16 @@ RUN apt-get update && apt-get install -y \
 # Install Poetry
 RUN pip install poetry
 
-# Copy poetry files
+# Copy poetry files from backend directory
 COPY backend/pyproject.toml backend/poetry.lock* ./
 
 # Configure poetry
 RUN poetry config virtualenvs.create false
 
-# Install dependencies
-RUN poetry install --only=main --no-dev
+# Install dependencies (skip installing current project as package)
+RUN poetry install --only=main --no-root
 
-# Copy application code
+# Copy application code from backend directory
 COPY backend/app ./app
 
 # Expose port
