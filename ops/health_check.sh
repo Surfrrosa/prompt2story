@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-BASE_URL="${BASE_URL:-https://your-frontend-domain.com}"
-API_URL="${API_URL:-https://your-backend-domain.com}"
+BASE_URL="${BASE_URL:-https://prompt2story.vercel.app}"
+API_URL="${API_URL:-https://prompt2story-backend.fly.dev}"
 API_P95_TARGET_MS="${API_P95_TARGET_MS:-1000}"
 
 curl_opts=(-sS -L --max-time 10 --retry 2 --retry-delay 1 -o /dev/null -w "%{http_code} %{time_total}")

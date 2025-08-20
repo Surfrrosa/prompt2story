@@ -20,9 +20,9 @@ on:
           - monthly
 
 env:
-  BASE_URL: https://your-frontend-domain.com
-  API_URL: https://your-backend-domain.com
-  API_URL_STAGING: https://your-staging-backend-domain.com
+  BASE_URL: https://prompt2story.vercel.app
+  API_URL: https://prompt2story-backend.fly.dev
+  API_URL_STAGING: https://prompt2story-backend-staging.fly.dev
 
 jobs:
   daily-health:
