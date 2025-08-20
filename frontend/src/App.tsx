@@ -63,6 +63,18 @@ function App() {
   const [isDragOver, setIsDragOver] = useState(false)
   const [dragCounter, setDragCounter] = useState(0)
 
+  const checkBackendHealth = async (apiUrl: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${apiUrl}/healthz`, { 
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
+      })
+      return response.ok
+    } catch {
+      return false
+    }
+  }
+
   const handleGenerate = async () => {
     if (!inputText.trim()) {
       setError('Please enter some text to analyze')
@@ -76,6 +88,13 @@ function App() {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      
+      const isBackendHealthy = await checkBackendHealth(apiUrl)
+      if (!isBackendHealthy) {
+        setError('Backend server is not responding. Please start the server with: poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload')
+        return
+      }
+
       const response = await fetch(`${apiUrl}/generate-user-stories`, {
         method: 'POST',
         headers: {
@@ -92,7 +111,7 @@ function App() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to generate user stories')
+        throw new Error(errorData.detail || `Server error: ${response.status}`)
       }
 
       const data: GenerationResponse = await response.json()
@@ -103,7 +122,13 @@ function App() {
       }
       setResult(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError('Cannot connect to server. Please ensure the backend is running on localhost:8000')
+      } else if (err instanceof Error && err.message.includes('OpenAI')) {
+        setError('API configuration error. Please check server logs and ensure OPENAI_API_KEY is set.')
+      } else {
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -420,6 +445,14 @@ function App() {
     setCopySuccess(null)
 
     try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      
+      const isBackendHealthy = await checkBackendHealth(apiUrl)
+      if (!isBackendHealthy) {
+        setError('Backend server is not responding. Please start the server with: poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload')
+        return
+      }
+
       const formData = new FormData()
       formData.append('file', uploadedFile)
       formData.append('include_metadata', includeMetadata.toString())
@@ -427,7 +460,6 @@ function App() {
       formData.append('include_advanced_criteria', includeAdvancedCriteria.toString())
       formData.append('expand_all_components', expandAllComponents.toString())
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
       const response = await fetch(`${apiUrl}/analyze-design`, {
         method: 'POST',
         body: formData,
@@ -435,13 +467,19 @@ function App() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to analyze design')
+        throw new Error(errorData.detail || `Server error: ${response.status}`)
       }
 
       const data: GenerationResponse = await response.json()
       setResult(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError('Cannot connect to server. Please ensure the backend is running on localhost:8000')
+      } else if (err instanceof Error && err.message.includes('OpenAI')) {
+        setError('API configuration error. Please check server logs and ensure OPENAI_API_KEY is set.')
+      } else {
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      }
     } finally {
       setIsProcessingFile(false)
     }

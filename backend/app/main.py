@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 import openai
@@ -9,8 +10,23 @@ import base64
 import PyPDF2
 import io
 from dotenv import load_dotenv
+import logging
 
 load_dotenv()
+
+def validate_environment():
+    """Validate that all required environment variables are set."""
+    required_vars = ["OPENAI_API_KEY"]
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    
+    if missing_vars:
+        raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}. "
+                        f"Please copy .env.example to .env and add your API keys.")
+
+validate_environment()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class Metadata(BaseModel):
     priority: str
@@ -32,6 +48,14 @@ app.add_middleware(
 )
 
 openai_client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception on {request.url}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error. Check server logs for details."}
+    )
 
 def load_prompt():
     try:

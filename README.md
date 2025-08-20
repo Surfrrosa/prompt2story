@@ -68,7 +68,32 @@ echo "OPENAI_API_KEY=your-api-key-here" >> .env
 
 # Start the development server
 poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Or use the new dev script
+poetry run dev
 ```
+
+## 🚀 Quick Setup (Automated)
+
+For first-time setup, use the automated setup script:
+
+```bash
+./setup.sh
+```
+
+This will:
+- Copy environment files from examples
+- Install all dependencies
+- Provide clear next steps
+
+## 📋 Development Startup Checklist
+
+Before starting development, ensure:
+
+1. ✅ Backend .env file configured with OPENAI_API_KEY
+2. ✅ Backend server running: `cd backend && poetry run dev`
+3. ✅ Frontend server running: `cd frontend && npm run dev`
+4. ✅ Health check passes: `curl http://localhost:8000/healthz`
 
 ### 🎨 Frontend Setup
 
