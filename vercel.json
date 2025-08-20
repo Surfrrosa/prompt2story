@@ -12,5 +12,8 @@
   "routes": [
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
-  ]
+  ],
+  "env": {
+    "VITE_API_URL": "https://prompt2story.fly.dev"
+  }
 }
