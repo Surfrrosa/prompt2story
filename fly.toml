@@ -13,7 +13,7 @@ primary_region = "iad"
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 0
   processes = ["app"]
 
   [http_service.concurrency]
@@ -21,11 +21,10 @@ primary_region = "iad"
     soft_limit = 50
     hard_limit = 75
 
-  # Health check (new-style; must be nested under http_service)
+  # ✅ Health check must be nested under http_service and include "type"
   [[http_service.checks]]
-    name = "health"
     type = "http"
-    method = "GET"
+    method = "get"
     path = "/healthz"
     interval = "15s"
     timeout = "2s"
