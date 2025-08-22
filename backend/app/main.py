@@ -461,32 +461,46 @@ async def analyze_design(
 
         # Pass 2: strict JSON (text-only)
         to_json_prompt = (
-            f"{load_prompt()}\n\n"
-            f"{JSON_INSTRUCTIONS}\n\n"
-            f"Here is a structured outline of the UI extracted from the image:\n\n"
-            f"{outline}\n\n"
-            f"Now generate the JSON object that matches the schema exactly. No preamble, no markdown, no code fences."
-        )
+           to_json_prompt = (
+    f"{JSON_INSTRUCTIONS}\n\n"
+    "CRITICAL RULES:\n"
+    " - Output MUST be a single JSON object only. No markdown, no code fences, no prose.\n"
+    " - Keys allowed: user_stories, edge_cases.\n"
+    " - Each acceptance_criteria item MUST be a string.\n"
+    " - If unsure about a field, return an empty array or null (do not write explanations).\n\n"
+    "UI OUTLINE (from image):\n"
+    f"{outline}\n\n"
+    "Now produce the JSON object that exactly matches the schema."
+)
 
-        content = call_openai_json(
-            messages=[
-                {"role": "system", "content": "You are a senior Product Owner and UX analyst. Output only valid JSON."},
-                {"role": "user", "content": to_json_prompt},
-            ],
-            temperature=0.2,
-        )
 
-    try:
-        result = extract_json_from_content(content)
-        return GenerationResponse(**result)
-    except Exception:
-        excerpt = content[:200] + "..." if len(content) > 200 else content
-        return GenerationResponse(
-            user_stories=[UserStory(
-                title="Document Analysis Generated",
-                story=excerpt,
-                acceptance_criteria=["Please review the generated content for specific criteria"],
-            )],
-            edge_cases=["Please review the generated content for edge cases"],
-        )
+       content = call_openai_json(
+    messages=[
+        {"role": "system", "content": (
+            "You are a senior Product Owner and UX analyst. "
+            "Return ONLY a single JSON object that exactly matches the schema. "
+            "No prose, no markdown, no code fences."
+        )},
+        {"role": "user", "content": to_json_prompt},
+    ],
+    temperature=0.2,
+    max_tokens=4000,  # if your helper doesn't accept this, delete this line
+)
 
+# --- helpful for debugging + parsing stability ---
+logger.info("Image→JSON candidate (first 400 chars): %s", content[:400])
+content = content.strip().lstrip("\ufeff")  # remove BOM/leading whitespace if present
+
+# Parse (fail loudly so you can see the raw model output in the response)
+try:
+    result = extract_json_from_content(content)
+    return GenerationResponse(**result)
+except Exception as e:
+    raise HTTPException(
+        status_code=422,
+        detail={
+            "message": "Image→JSON conversion did not return valid JSON.",
+            "error": str(e),
+            "model_output": content,  # remove later if you don't want to expose it
+        },
+    )
