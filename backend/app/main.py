@@ -296,7 +296,7 @@ async def generate_user_stories(input_data: TextInput):
 
     content = call_openai_json(
         messages=[
-            {"role": "system", "content": "You are a senior Product Owner and business analyst. Output only valid JSON."},
+            {"role": "system", "content": "You are a highly experienced senior Product Owner and business analyst. Output only valid JSON."},
             {"role": "user", "content": full_prompt},
         ],
         temperature=0.2,
@@ -322,7 +322,7 @@ async def regenerate_story(request: RegenerateRequest):
     if not request.original_input.strip():
         raise HTTPException(status_code=400, detail="Original input cannot be empty")
 
-    regen_prompt = f"""You are a senior Product Owner. Regenerate and improve a single user story.
+    regen_prompt = f"""You are a seasoned senior Product Owner. Regenerate and improve a single user story.
 
 ORIGINAL INPUT:
 {request.original_input}
