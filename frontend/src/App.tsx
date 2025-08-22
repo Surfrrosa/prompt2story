@@ -87,11 +87,13 @@ function App() {
     setCopySuccess(null)
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-      
-      const isBackendHealthy = await checkBackendHealth(apiUrl)
+      const apiUrl = import.meta.env.VITE_API_URL as string;
+if (!apiUrl) {
+  throw new Error('Missing VITE_API_URL in the frontend environment. Add it to your hosting provider and redeploy.');
+}
+const isBackendHealthy = await checkBackendHealth(apiUrl)
       if (!isBackendHealthy) {
-        setError('Backend server is not responding. Please start the server with: poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload')
+        setError(`Backend unreachable at ${apiUrl}/healthz. Check that VITE_API_URL is set in the frontend environment and that the API CORS allows this site.`)
         return
       }
 
@@ -256,8 +258,11 @@ function App() {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-      const story = result?.user_stories[storyIndex]
+      const apiUrl = import.meta.env.VITE_API_URL as string;
+if (!apiUrl) {
+  throw new Error('Missing VITE_API_URL in the frontend environment. Add it to your hosting provider and redeploy.');
+}
+const story = result?.user_stories[storyIndex]
       console.log('Submitting feedback to:', `${apiUrl}/submit-feedback`)
       console.log('Story:', story)
       
@@ -298,8 +303,11 @@ function App() {
     setRegeneratingStates(newRegeneratingStates)
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-      const currentStory = result.user_stories[storyIndex]
+      const apiUrl = import.meta.env.VITE_API_URL as string;
+if (!apiUrl) {
+  throw new Error('Missing VITE_API_URL in the frontend environment. Add it to your hosting provider and redeploy.');
+}
+const currentStory = result.user_stories[storyIndex]
       
       const response = await fetch(`${apiUrl}/regenerate-story`, {
         method: 'POST',
@@ -445,11 +453,13 @@ function App() {
     setCopySuccess(null)
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-      
-      const isBackendHealthy = await checkBackendHealth(apiUrl)
+      const apiUrl = import.meta.env.VITE_API_URL as string;
+if (!apiUrl) {
+  throw new Error('Missing VITE_API_URL in the frontend environment. Add it to your hosting provider and redeploy.');
+}
+const isBackendHealthy = await checkBackendHealth(apiUrl)
       if (!isBackendHealthy) {
-        setError('Backend server is not responding. Please start the server with: poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload')
+        setError(`Backend unreachable at ${apiUrl}/healthz. Check that VITE_API_URL is set in the frontend environment and that the API CORS allows this site.`)
         return
       }
 
