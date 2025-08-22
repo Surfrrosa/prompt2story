@@ -13,22 +13,18 @@ primary_region = "iad"
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
   processes = ["app"]
 
-  [http_service.concurrency]
-    type = "connections"
-    soft_limit = 50
-    hard_limit = 75
-
-  # ✅ Health check must be nested under http_service and include "type"
-  [[http_service.checks]]
-    type = "http"
-    method = "get"
-    path = "/healthz"
-    interval = "15s"
-    timeout = "2s"
-    grace_period = "20s"
+[[checks]]
+  type = "http"
+  name = "healthz"
+  port = 8000
+  method = "get"
+  path = "/healthz"
+  interval = "15s"
+  timeout = "5s"
+  grace_period = "30s"
 
 [[vm]]
   cpu_kind = "shared"
