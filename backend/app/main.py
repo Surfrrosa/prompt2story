@@ -1,5 +1,5 @@
 """
-Prompt2Story Backend (FastAPI) — Vision two-step JSON pipeline
+Prompt2Story Backend (FastAPI) â€" Vision two-step JSON pipeline
 - CORS configured for Fly.io + frontend hosts
 - Robust JSON-only generation with resilient parsing
 - Two-step image analysis: (1) vision outline (no JSON), (2) strict JSON conversion
@@ -138,7 +138,7 @@ def load_design_prompt() -> str:
         )
 
 JSON_INSTRUCTIONS = """
-Return ONLY a valid JSON object matching exactly this schema—no preamble, no markdown, no code fences:
+Return ONLY a valid JSON object matching exactly this schemaâ€"no preamble, no markdown, no code fences:
 
 {
   "user_stories": [
@@ -240,7 +240,7 @@ def extract_pdf_text(file_content: bytes) -> str:
 def get_vision_outline(base64_image: str, content_type: str, prompt_text: str) -> str:
     """
     First pass: ask the model to extract a concise, structured outline of the UI.
-    No JSON here—just bullets/sections so the next pass can be forced into JSON mode.
+    No JSON hereâ€"just bullets/sections so the next pass can be forced into JSON mode.
     """
     vision_messages = [
         {
@@ -461,46 +461,44 @@ async def analyze_design(
 
         # Pass 2: strict JSON (text-only)
         to_json_prompt = (
-           to_json_prompt = (
-    f"{JSON_INSTRUCTIONS}\n\n"
-    "CRITICAL RULES:\n"
-    " - Output MUST be a single JSON object only. No markdown, no code fences, no prose.\n"
-    " - Keys allowed: user_stories, edge_cases.\n"
-    " - Each acceptance_criteria item MUST be a string.\n"
-    " - If unsure about a field, return an empty array or null (do not write explanations).\n\n"
-    "UI OUTLINE (from image):\n"
-    f"{outline}\n\n"
-    "Now produce the JSON object that exactly matches the schema."
-)
+            f"{JSON_INSTRUCTIONS}\n\n"
+            "CRITICAL RULES:\n"
+            " - Output MUST be a single JSON object only. No markdown, no code fences, no prose.\n"
+            " - Keys allowed: user_stories, edge_cases.\n"
+            " - Each acceptance_criteria item MUST be a string.\n"
+            " - If unsure about a field, return an empty array or null (do not write explanations).\n\n"
+            "UI OUTLINE (from image):\n"
+            f"{outline}\n\n"
+            "Now produce the JSON object that exactly matches the schema."
+        )
 
+        content = call_openai_json(
+            messages=[
+                {"role": "system", "content": (
+                    "You are a senior Product Owner and UX analyst. "
+                    "Return ONLY a single JSON object that exactly matches the schema. "
+                    "No prose, no markdown, no code fences."
+                )},
+                {"role": "user", "content": to_json_prompt},
+            ],
+            temperature=0.2,
+            max_tokens=4000,
+        )
 
-       content = call_openai_json(
-    messages=[
-        {"role": "system", "content": (
-            "You are a senior Product Owner and UX analyst. "
-            "Return ONLY a single JSON object that exactly matches the schema. "
-            "No prose, no markdown, no code fences."
-        )},
-        {"role": "user", "content": to_json_prompt},
-    ],
-    temperature=0.2,
-    max_tokens=4000,  # if your helper doesn't accept this, delete this line
-)
+    # --- helpful for debugging + parsing stability ---
+    logger.info("Image→JSON candidate (first 400 chars): %s", content[:400])
+    content = content.strip().lstrip("\ufeff")  # remove BOM/leading whitespace if present
 
-# --- helpful for debugging + parsing stability ---
-logger.info("Image→JSON candidate (first 400 chars): %s", content[:400])
-content = content.strip().lstrip("\ufeff")  # remove BOM/leading whitespace if present
-
-# Parse (fail loudly so you can see the raw model output in the response)
-try:
-    result = extract_json_from_content(content)
-    return GenerationResponse(**result)
-except Exception as e:
-    raise HTTPException(
-        status_code=422,
-        detail={
-            "message": "Image→JSON conversion did not return valid JSON.",
-            "error": str(e),
-            "model_output": content,  # remove later if you don't want to expose it
-        },
-    )
+    # Parse (fail loudly so you can see the raw model output in the response)
+    try:
+        result = extract_json_from_content(content)
+        return GenerationResponse(**result)
+    except Exception as e:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": "Image→JSON conversion did not return valid JSON.",
+                "error": str(e),
+                "model_output": content,  # remove later if you don't want to expose it
+            },
+        )
