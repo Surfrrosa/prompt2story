@@ -1,15 +1,9 @@
+# app/main.py
 """
-Prompt2Story Backend (FastAPI)
-
-Endpoints:
-- GET  /healthz
-- POST /generate-user-stories        (text → JSON)
-- POST /regenerate-story             (improve one story)
-- POST /analyze-design               (image/PDF → JSON via vision outline -> JSON)
-
-Notes:
-- CORS: set ALLOWED_ORIGINS="https://prompt2story.com,https://*.vercel.app" in prod.
-- JSON parsing is resilient to fenced blocks and stray prose.
+Prompt2Story Backend (FastAPI) — Vision two-step JSON pipeline
+- CORS for Fly.io + your frontends
+- Robust JSON-only generation with resilient parsing
+- Two-step image analysis: (1) vision outline, (2) strict JSON conversion
 """
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
@@ -23,10 +17,14 @@ import re
 import json
 import base64
 import logging
+from pathlib import Path
 
 import PyPDF2
 from dotenv import load_dotenv
+
+# OpenAI SDK v1
 import openai
+openai_client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # -----------------------------------------------------------------------------
 # Environment & Config
@@ -35,11 +33,12 @@ import openai
 load_dotenv()
 
 def validate_environment() -> None:
-    required = ["OPENAI_API_KEY"]
-    missing = [k for k in required if not os.getenv(k)]
+    required_vars = ["OPENAI_API_KEY"]
+    missing = [v for v in required_vars if not os.getenv(v)]
     if missing:
-        raise RuntimeError(
-            f"Missing required environment variables: {', '.join(missing)}"
+        raise ValueError(
+            "Missing required environment variables: "
+            f"{', '.join(missing)}. Create .env and set your keys."
         )
 
 validate_environment()
@@ -47,23 +46,25 @@ validate_environment()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("prompt2story")
 
-TEXT_MODEL = os.getenv("TEXT_MODEL", "gpt-4o")
-JSON_MODEL = os.getenv("JSON_MODEL", "gpt-4o-mini")  # vision-capable
+# Default models (can be overridden via env)
+TEXT_MODEL_PRIMARY = os.getenv("TEXT_MODEL", "gpt-4o")
+JSON_MODEL_PRIMARY = os.getenv("JSON_MODEL", "gpt-4o-mini")  # vision-capable
 
+# Upload size limit
 MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "10"))
 MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
-# App
-app = FastAPI(title="Prompt2Story API", version="1.0.0")
+# FastAPI app
+app = FastAPI(title="User Story Generator API")
 
-# CORS (explicit domains in prod; '*' without credentials for quick dev)
+# --- CORS ---------------------------------------------------------------------
 origins_env = os.getenv("ALLOWED_ORIGINS", "").strip()
 if origins_env:
     ALLOWED_ORIGINS = [o.strip() for o in origins_env.split(",") if o.strip()]
     ALLOW_CREDENTIALS = True
 else:
     ALLOWED_ORIGINS = ["*"]
-    ALLOW_CREDENTIALS = False
+    ALLOW_CREDENTIALS = False  # must be False when allow_origins=["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -73,11 +74,8 @@ app.add_middleware(
     allow_credentials=ALLOW_CREDENTIALS,
 )
 
-# OpenAI client
-openai_client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 # -----------------------------------------------------------------------------
-# Schemas
+# Data Models
 # -----------------------------------------------------------------------------
 
 class Metadata(BaseModel):
@@ -111,41 +109,39 @@ class RegenerateRequest(BaseModel):
     include_metadata: bool = False
 
 # -----------------------------------------------------------------------------
-# Prompts & Helpers
+# Prompt Loading Helpers
 # -----------------------------------------------------------------------------
 
-def _read_first_existing(paths) -> str:
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+def _read_first_existing(paths: List[Path], default_text: str) -> str:
     for p in paths:
         try:
-            with open(p, "r") as f:
-                return f.read()
+            return p.read_text(encoding="utf-8")
         except FileNotFoundError:
             continue
-    return ""
+    return default_text
 
 def load_prompt() -> str:
-    content = _read_first_existing([
-        "prompts/user_story_prompt.md",
-        "user_story_prompt.md",
-        "user-stories (3).md",
-    ])
-    if content:
-        return content
-    return (
-        "You are an expert product owner. Convert the provided input into well-structured "
-        "user stories with acceptance criteria and edge cases."
+    return _read_first_existing(
+        [
+            PROJECT_ROOT / "prompts" / "user_story_prompt.md",
+            PROJECT_ROOT / "user_story_prompt.md",
+        ],
+        "You are an expert product manager and business analyst. "
+        "Convert the provided unstructured text into well-structured user stories, "
+        "acceptance criteria, and edge cases."
     )
 
 def load_design_prompt() -> str:
-    content = _read_first_existing([
-        "prompts/design_analysis_prompt.md",
-        "design_analysis_prompt.md",
-    ])
-    if content:
-        return content
-    return (
-        "Analyze the uploaded UI (image) and infer user stories from visible elements, flows, "
-        "and interactions. Focus on buttons, forms, navigation, states, and errors."
+    return _read_first_existing(
+        [
+            PROJECT_ROOT / "prompts" / "design_analysis_prompt.md",
+            PROJECT_ROOT / "design_analysis_prompt.md",
+        ],
+        "Analyze this design mockup and generate user stories based on the UI elements "
+        "you can identify. Focus on interactive elements like buttons, forms, navigation, "
+        "and user workflows."
     )
 
 JSON_INSTRUCTIONS = """
@@ -171,28 +167,35 @@ Return ONLY a valid JSON object matching exactly this schema—no preamble, no m
 }
 """.strip()
 
+# -----------------------------------------------------------------------------
+# Utility: JSON extraction
+# -----------------------------------------------------------------------------
+
 def extract_json_from_content(content: str) -> dict:
-    """Parse JSON even if the model wrapped it in prose or fences."""
-    # direct
+    # 1) Direct JSON
     try:
         return json.loads(content)
     except Exception:
         pass
-    # fenced ```json
+    # 2) ```json ... ```
     m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content, flags=re.S)
     if m:
         return json.loads(m.group(1))
-    # first { .. last }
+    # 3) First '{' .. last '}'
     start = content.find("{")
     end = content.rfind("}")
     if start != -1 and end != -1 and end > start:
         return json.loads(content[start:end+1])
-    raise ValueError("No valid JSON object found")
+    raise ValueError("No valid JSON object found in model output")
 
-def call_openai_json(messages, model_json: str = JSON_MODEL,
-                     model_fallback: str = TEXT_MODEL,
-                     temperature: float = 0.2, max_tokens: int = 4000) -> str:
-    """Try response_format=json; fallback to regular completion if needed."""
+def call_openai_json(
+    messages,
+    model_json: str = JSON_MODEL_PRIMARY,
+    model_fallback: str = TEXT_MODEL_PRIMARY,
+    temperature: float = 0.2,
+    max_tokens: int = 4000,
+) -> str:
+    """Try JSON mode first; if it fails, fall back to regular completion."""
     try:
         resp = openai_client.chat.completions.create(
             model=model_json,
@@ -203,7 +206,7 @@ def call_openai_json(messages, model_json: str = JSON_MODEL,
         )
         return resp.choices[0].message.content
     except Exception as e:
-        logger.warning("JSON mode failed (%s). Falling back to regular call.", e)
+        logger.warning("JSON mode failed on %s (%s). Falling back to regular call.", model_json, e)
         resp = openai_client.chat.completions.create(
             model=model_fallback,
             messages=messages,
@@ -213,20 +216,19 @@ def call_openai_json(messages, model_json: str = JSON_MODEL,
         return resp.choices[0].message.content
 
 def extract_pdf_text(file_content: bytes) -> str:
-    """Extract text from a PDF using PyPDF2."""
     try:
         pdf_file = io.BytesIO(file_content)
         try:
-            reader = PyPDF2.PdfReader(pdf_file, strict=False)
+            pdf_reader = PyPDF2.PdfReader(pdf_file, strict=False)
         except Exception:
             pdf_file.seek(0)
-            reader = PyPDF2.PdfReader(pdf_file)
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
         text = ""
-        for page in getattr(reader, "pages", []):
+        for page in getattr(pdf_reader, "pages", []):
             try:
-                t = page.extract_text()
-                if t:
-                    text += t + "\n"
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
             except Exception:
                 continue
         if not text.strip():
@@ -238,13 +240,12 @@ def extract_pdf_text(file_content: bytes) -> str:
         raise HTTPException(status_code=500, detail=f"PDF processing error: {str(e)}")
 
 def get_vision_outline(base64_image: str, content_type: str, prompt_text: str) -> str:
-    """Step 1 for images: ask the model for a concise outline of UI sections/elements."""
     messages = [
         {
             "role": "system",
             "content": (
                 "You are a senior UX analyst. Extract a concise, structured outline of UI sections, "
-                "key elements, and likely user actions. Use terse bullets. No JSON."
+                "key elements, and likely user actions. Use terse bullets. No JSON. No paragraphs."
             ),
         },
         {
@@ -256,7 +257,7 @@ def get_vision_outline(base64_image: str, content_type: str, prompt_text: str) -
         },
     ]
     resp = openai_client.chat.completions.create(
-        model=JSON_MODEL,
+        model=JSON_MODEL_PRIMARY,
         messages=messages,
         temperature=0.2,
         max_tokens=2000,
@@ -270,10 +271,7 @@ def get_vision_outline(base64_image: str, content_type: str, prompt_text: str) -
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error("Unhandled exception on %s: %s", request.url, exc, exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error. Check server logs for details."},
-    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error. Check server logs for details."})
 
 @app.get("/healthz")
 async def healthz():
@@ -291,23 +289,24 @@ async def generate_user_stories(input_data: TextInput):
     prompt = load_prompt()
 
     if input_data.include_metadata:
-        prompt += (
-            "\n\nIMPORTANT: Include detailed metadata in your response with priority "
-            "(Low/Medium/High), type (Feature|Bug|Chore|Enhancement|Accessibility), component, "
-            "effort, and persona (End User/Admin/Support Agent/Engineer/Designer/QA/Customer/Other)."
-        )
+        prompt += ("\n\nIMPORTANT: Include detailed metadata in your response with priority "
+                   "(Low/Medium/High), type (Feature|Bug|Chore|Enhancement|Accessibility), component, "
+                   "effort, and persona (End User/Admin/Support Agent/Engineer/Designer/QA/Customer/Other).")
     if input_data.infer_edge_cases:
-        prompt += "\n\nEDGE CASES: Include comprehensive edge cases, boundary conditions, and error scenarios."
+        prompt += ("\n\nEDGE CASES: Infer and include comprehensive edge cases, boundary conditions, "
+                   "and error scenarios for each user story.")
     if input_data.include_advanced_criteria:
-        prompt += "\n\nADVANCED CRITERIA: Generate 5-7 detailed acceptance criteria per story."
+        prompt += ("\n\nADVANCED CRITERIA: Generate 5-7 detailed acceptance criteria per story covering "
+                   "normal flow, error handling, edge cases, different states, accessibility, and performance.")
     if input_data.expand_all_components:
-        prompt += "\n\nCOMPREHENSIVE ANALYSIS: Analyze ALL mentioned components and requirements."
+        prompt += ("\n\nCOMPREHENSIVE ANALYSIS: Scan and analyze ALL mentioned components, features, and "
+                   "requirements. Be thorough and complete.")
 
     full_prompt = f"{prompt}\n\n{JSON_INSTRUCTIONS}\n\nUnstructured text to analyze:\n{input_data.text}"
 
     content = call_openai_json(
         messages=[
-            {"role": "system", "content": "You are a senior Product Owner. Output only valid JSON."},
+            {"role": "system", "content": "You are a senior Product Owner and business analyst. Output only valid JSON."},
             {"role": "user", "content": full_prompt},
         ],
         temperature=0.2,
@@ -332,6 +331,13 @@ async def regenerate_story(request: RegenerateRequest):
     if not request.original_input.strip():
         raise HTTPException(status_code=400, detail="Original input cannot be empty")
 
+    maybe_metadata = (
+        ',\n  "metadata": {"priority": "Low|Medium|High","type": "Feature|Bug|Chore|Enhancement",'
+        '"component":"string","effort":"string","persona":"End User|Admin|Support Agent|Engineer|Designer|QA|Customer|Other",'
+        '"persona_other":"string|null"}'
+        if request.include_metadata else ""
+    )
+
     regen_prompt = f"""You are a senior Product Owner. Regenerate and improve a single user story.
 
 ORIGINAL INPUT:
@@ -343,9 +349,11 @@ Story: {request.current_story.story}
 Acceptance Criteria: {', '.join(request.current_story.acceptance_criteria)}
 
 INSTRUCTIONS:
-1. Improve specificity and actionability.
-2. Provide 3-5 Gherkin-style acceptance criteria.
-3. Keep scope aligned with the original input.
+1. Analyze the original input to understand the full context.
+2. Improve the current story to be more specific, actionable, and comprehensive.
+3. Generate 3-5 detailed acceptance criteria using proper Gherkin (Given/When/Then).
+4. Ensure the story addresses the core need from the original input.
+5. Make the story more testable and implementable than the current version.
 
 Return this JSON only:
 {{
@@ -355,8 +363,7 @@ Return this JSON only:
     "Given [context], when [action], then [outcome]",
     "Given [failure], when [action], then [error handling]",
     "Given [edge case], when [action], then [behavior]"
-  ]{',' if request.include_metadata else ''}
-{('  \"metadata\": {\"priority\": \"Low|Medium|High\", \"type\": \"Feature|Bug|Chore|Enhancement|Accessibility\", \"component\": \"string\", \"effort\": \"string\", \"persona\": \"End User|Admin|Support Agent|Engineer|Designer|QA|Customer|Other\", \"persona_other\": \"string|null\" }' if request.include_metadata else '')}
+  ]{maybe_metadata}
 }}"""
 
     content = call_openai_json(
@@ -372,7 +379,7 @@ Return this JSON only:
         result = extract_json_from_content(content)
         for key in ("title", "story", "acceptance_criteria"):
             if key not in result:
-                raise ValueError(f"Missing required field '{key}'")
+                raise ValueError(f"Missing required field '{key}' in regenerated story")
         return UserStory(**result)
     except Exception:
         return UserStory(
@@ -401,13 +408,13 @@ async def analyze_design(
     if len(file_content) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=400, detail=f"File size must be less than {MAX_UPLOAD_MB}MB")
 
-    # --- PDF branch -----------------------------------------------------------
     if file.content_type == "application/pdf":
+        # --- PDF branch: extract text → JSON
         pdf_text = extract_pdf_text(file_content)
         prompt = load_prompt()
 
         if include_metadata:
-            prompt += "\n\nIMPORTANT: Include metadata (priority/type/component/effort/persona) for each story."
+            prompt += "\n\nIMPORTANT: Include detailed metadata (priority/type/component/effort/persona) for each story."
         if infer_edge_cases:
             prompt += "\n\nEDGE CASES: Include comprehensive edge cases for each story."
         if include_advanced_criteria:
@@ -419,27 +426,27 @@ async def analyze_design(
 
         content = call_openai_json(
             messages=[
-                {"role": "system", "content": "You are a senior Product Owner. Output only valid JSON."},
+                {"role": "system", "content": "You are a senior Product Owner and business analyst. Output only valid JSON."},
                 {"role": "user", "content": full_prompt},
             ],
             temperature=0.2,
         )
 
-    # --- Image branch ---------------------------------------------------------
     else:
+        # --- Image branch: (1) vision outline → (2) strict JSON
         base64_image = base64.b64encode(file_content).decode("utf-8")
         prompt = load_design_prompt()
 
         if include_metadata:
-            prompt += "\n\nIMPORTANT: Include metadata (priority/type/component/effort/persona) for each story."
+            prompt += "\n\nIMPORTANT: Include detailed metadata (priority/type/component/effort/persona) for each story."
         if infer_edge_cases:
-            prompt += "\n\nEDGE CASES: Cover edge cases for each UI element and interaction."
+            prompt += "\n\nEDGE CASES: Include comprehensive edge cases for each UI element and interaction."
         if include_advanced_criteria:
-            prompt += "\n\nADVANCED CRITERIA: 5-7 criteria per story (normal flow, errors, responsive, a11y, states)."
+            prompt += "\n\nADVANCED CRITERIA: Generate 5-7 detailed acceptance criteria per story (normal flow, errors, responsive, a11y, states)."
         if expand_all_components:
             prompt += "\n\nCOMPREHENSIVE UI ANALYSIS: Analyze ALL visible UI components and interactions."
 
-        # Pass 1: outline
+        # Pass 1: vision outline (free-form bullets; no JSON)
         outline = get_vision_outline(base64_image, file.content_type, prompt)
         if not outline:
             raise HTTPException(status_code=400, detail="Vision analysis produced no content")
@@ -473,9 +480,9 @@ async def analyze_design(
             max_tokens=4000,
         )
 
-    # --- Parse and return -----------------------------------------------------
-    logger.info("Candidate (first 400 chars): %s", content[:400])
-    content = content.strip().lstrip("\ufeff")
+    # --- helpful for debugging + parsing stability ---
+    logger.info("Model candidate (first 400 chars): %s", content[:400])
+    content = content.strip().lstrip("\ufeff")  # remove potential BOM
 
     try:
         result = extract_json_from_content(content)
@@ -484,10 +491,11 @@ async def analyze_design(
         raise HTTPException(
             status_code=422,
             detail={
-                "message": "Model output was not valid JSON.",
+                "message": "Model did not return valid JSON.",
                 "error": str(e),
-                "model_output": content,  # remove in prod if you prefer
+                "model_output": content,
             },
         )
+
 
 
