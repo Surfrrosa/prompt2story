@@ -1,0 +1,21 @@
+{
+  "name": "prompt2story-vercel",
+  "version": "1.0.0",
+  "description": "Prompt2Story - Vercel serverless functions",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "tsc --build"
+  },
+  "dependencies": {
+    "openai": "^4.67.3",
+    "@vercel/node": "^3.2.20"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2",
+    "@types/node": "^22.10.2"
+  }
+}
