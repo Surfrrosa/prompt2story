@@ -7,6 +7,7 @@ import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings
 import { TypeAnimation } from 'react-type-animation'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
+import { getHealth, generateUserStories, postJson } from '@/lib/api'
 
 interface Metadata {
   priority: 'Low' | 'Medium' | 'High'
@@ -63,13 +64,10 @@ function App() {
   const [isDragOver, setIsDragOver] = useState(false)
   const [dragCounter, setDragCounter] = useState(0)
 
-  const checkBackendHealth = async (apiUrl: string): Promise<boolean> => {
+  const checkBackendHealth = async (): Promise<boolean> => {
     try {
-      const response = await fetch(`${apiUrl}/healthz`, { 
-        method: 'GET',
-        signal: AbortSignal.timeout(5000)
-      })
-      return response.ok
+      await getHealth()
+      return true
     } catch {
       return false
     }
@@ -87,36 +85,19 @@ function App() {
     setCopySuccess(null)
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL as string;
-if (!apiUrl) {
-  throw new Error('Missing VITE_API_URL in the frontend environment. Add it to your hosting provider and redeploy.');
-}
-const isBackendHealthy = await checkBackendHealth(apiUrl)
+      const isBackendHealthy = await checkBackendHealth()
       if (!isBackendHealthy) {
-        setError(`Backend unreachable at ${apiUrl}/healthz. Check that VITE_API_URL is set in the frontend environment and that the API CORS allows this site.`)
+        setError('Backend unreachable at /api/healthz. The serverless API may be starting up, please try again.')
         return
       }
 
-      const response = await fetch(`${apiUrl}/generate-user-stories`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          text: inputText,
-          include_metadata: includeMetadata,
-          infer_edge_cases: inferEdgeCases,
-          include_advanced_criteria: includeAdvancedCriteria,
-          expand_all_components: expandAllComponents
-        }),
+      const data = await generateUserStories({
+        text: inputText,
+        include_metadata: includeMetadata,
+        infer_edge_cases: inferEdgeCases,
+        include_advanced_criteria: includeAdvancedCriteria,
+        expand_all_components: expandAllComponents
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || `Server error: ${response.status}`)
-      }
-
-      const data: GenerationResponse = await response.json()
       console.log('API Response:', data)
       console.log('Include Metadata:', includeMetadata)
       if (data.user_stories && data.user_stories.length > 0) {
@@ -125,7 +106,7 @@ const isBackendHealthy = await checkBackendHealth(apiUrl)
       setResult(data)
     } catch (err) {
       if (err instanceof TypeError && err.message.includes('fetch')) {
-        setError('Cannot connect to server. Please ensure the backend is running on localhost:8000')
+        setError('Cannot connect to serverless API. Please try again in a moment.')
       } else if (err instanceof Error && err.message.includes('OpenAI')) {
         setError('API configuration error. Please check server logs and ensure OPENAI_API_KEY is set.')
       } else {
@@ -258,28 +239,18 @@ const isBackendHealthy = await checkBackendHealth(apiUrl)
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL as string;
-if (!apiUrl) {
-  throw new Error('Missing VITE_API_URL in the frontend environment. Add it to your hosting provider and redeploy.');
-}
-const story = result?.user_stories[storyIndex]
-      console.log('Submitting feedback to:', `${apiUrl}/submit-feedback`)
+      const story = result?.user_stories[storyIndex]
+      console.log('Submitting feedback to: /api/submit-feedback')
       console.log('Story:', story)
       
-      const response = await fetch(`${apiUrl}/submit-feedback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rating: feedbackState.rating,
-          feedback_text: feedbackState.text,
-          story_title: story?.title,
-          story_content: story?.story,
-          timestamp: new Date().toISOString()
-        })
+      const responseData = await postJson('/api/submit-feedback', {
+        rating: feedbackState.rating,
+        feedback_text: feedbackState.text,
+        story_title: story?.title,
+        story_content: story?.story,
+        timestamp: new Date().toISOString()
       })
 
-      console.log('Response status:', response.status)
-      const responseData = await response.json()
       console.log('Response data:', responseData)
 
       const newStates = new Map(feedbackStates)
@@ -303,28 +274,13 @@ const story = result?.user_stories[storyIndex]
     setRegeneratingStates(newRegeneratingStates)
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL as string;
-if (!apiUrl) {
-  throw new Error('Missing VITE_API_URL in the frontend environment. Add it to your hosting provider and redeploy.');
-}
-const currentStory = result.user_stories[storyIndex]
+      const currentStory = result.user_stories[storyIndex]
       
-      const response = await fetch(`${apiUrl}/regenerate-story`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          original_input: inputText,
-          current_story: currentStory,
-          include_metadata: includeMetadata
-        })
+      const regeneratedStory = await postJson('/api/regenerate-story', {
+        original_input: inputText,
+        current_story: currentStory,
+        include_metadata: includeMetadata
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to regenerate story')
-      }
-
-      const regeneratedStory = await response.json()
       
       const updatedResult = { ...result }
       updatedResult.user_stories = [...result.user_stories]
@@ -453,13 +409,9 @@ const currentStory = result.user_stories[storyIndex]
     setCopySuccess(null)
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL as string;
-if (!apiUrl) {
-  throw new Error('Missing VITE_API_URL in the frontend environment. Add it to your hosting provider and redeploy.');
-}
-const isBackendHealthy = await checkBackendHealth(apiUrl)
+      const isBackendHealthy = await checkBackendHealth()
       if (!isBackendHealthy) {
-        setError(`Backend unreachable at ${apiUrl}/healthz. Check that VITE_API_URL is set in the frontend environment and that the API CORS allows this site.`)
+        setError('Backend unreachable at /api/healthz. The serverless API may be starting up, please try again.')
         return
       }
 
@@ -470,13 +422,13 @@ const isBackendHealthy = await checkBackendHealth(apiUrl)
       formData.append('include_advanced_criteria', includeAdvancedCriteria.toString())
       formData.append('expand_all_components', expandAllComponents.toString())
 
-      const response = await fetch(`${apiUrl}/analyze-design`, {
+      const response = await fetch('/api/analyze-design', {
         method: 'POST',
         body: formData,
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.detail || `Server error: ${response.status}`)
       }
 
@@ -484,7 +436,7 @@ const isBackendHealthy = await checkBackendHealth(apiUrl)
       setResult(data)
     } catch (err) {
       if (err instanceof TypeError && err.message.includes('fetch')) {
-        setError('Cannot connect to server. Please ensure the backend is running on localhost:8000')
+        setError('Cannot connect to serverless API. Please try again in a moment.')
       } else if (err instanceof Error && err.message.includes('OpenAI')) {
         setError('API configuration error. Please check server logs and ensure OPENAI_API_KEY is set.')
       } else {
