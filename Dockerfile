@@ -9,17 +9,12 @@ WORKDIR /app
 # System deps used for healthcheck and PDFs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    bash \
   && rm -rf /var/lib/apt/lists/*
 
-# Install Python deps explicitly required by working main.py
-# (FastAPI/uvicorn/openai/dotenv/PyPDF2/pydantic)
-RUN pip install --no-cache-dir \
-    fastapi \
-    "uvicorn[standard]" \
-    openai \
-    python-dotenv \
-    PyPDF2 \
-    pydantic
+# Copy requirements and install pinned Python deps
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the whole repo (so relative prompt files work)
 COPY . .
