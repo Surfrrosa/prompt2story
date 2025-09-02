@@ -43,13 +43,43 @@ function validateEnvironment(): void {
 // Load prompt templates
 function loadPrompt(): string {
   try {
-    const promptPath = path.join(process.cwd(), 'prompts', 'user_story_prompt.md');
-    return fs.readFileSync(promptPath, 'utf-8');
+    // Try multiple possible locations for the prompt file
+    const possiblePaths = [
+      path.join(process.cwd(), 'prompts', 'user_story_prompt.md'),
+      path.join(process.cwd(), '..', 'prompts', 'user_story_prompt.md'),
+      path.join(process.cwd(), 'frontend', 'prompts', 'user_story_prompt.md'),
+    ];
+    
+    for (const promptPath of possiblePaths) {
+      try {
+        return fs.readFileSync(promptPath, 'utf-8');
+      } catch (error) {
+        continue;
+      }
+    }
+    
+    // If all paths fail, use comprehensive fallback matching the original
+    throw new Error('Prompt file not found');
   } catch (error) {
-    // Fallback prompt if file is missing
-    return `You are an expert product manager and business analyst. 
-Convert the provided unstructured text into well-structured user stories, 
-acceptance criteria, and edge cases.`;
+    // Comprehensive fallback prompt matching the original user_story_prompt.md
+    return `# User Story Generation Prompt
+
+You are a senior Product Owner. From the following design or text, identify all relevant user stories, covering both primary actions and secondary interactions. For each user story, generate at least 3–5 detailed acceptance criteria using the Gherkin format (Given / When / Then). Consider UI elements, edge cases, different states, and common UX patterns. Do not limit your output arbitrarily. Be thorough, but keep language clear and consistent.
+
+## Core Mission: EXTRACT EVERY DISTINCT ISSUE
+Your primary goal is to identify and extract EVERY separate issue, bug, feature, or requirement mentioned in the input text. Each distinct problem or enhancement should become its own user story.
+
+## Instructions:
+1. **Parse compound statements carefully** - Meeting notes often contain multiple issues in single sentences or paragraphs
+2. **Identify implicit issues** - Look for phrases like "we forgot", "missing", "doesn't work", "should do X but doesn't"
+3. **Separate each distinct concern** - Even if mentioned briefly or in passing, each issue gets its own user story
+4. **Convert ALL problems to user stories** - Bugs, QA gaps, missing features, broken behaviors all become structured user stories
+5. **Ensure 1:1 mapping** - One user story per distinct issue, no exceptions
+6. **Create 3-5 detailed acceptance criteria per story** - Use proper Gherkin format (Given/When/Then) covering normal flow, edge cases, error scenarios, and different states
+7. **Add optional metadata when confident** - Include type (bug/feature), component, priority, effort, persona when clearly indicated
+
+## Output Format:
+Return a JSON object with user_stories and edge_cases arrays.`;
   }
 }
 
@@ -189,13 +219,16 @@ requirements. Be thorough and complete.`;
 
     const fullPrompt = `${prompt}\n\n${JSON_INSTRUCTIONS}\n\nUnstructured text to analyze:\n${inputData.text}`;
 
-    // Call OpenAI
+    // Call OpenAI using exact Python parameters
     const content = await callOpenAIJson(
       openai,
       [
         { role: 'system', content: 'You are a senior Product Owner and business analyst. Output only valid JSON.' },
         { role: 'user', content: fullPrompt }
-      ]
+      ],
+      'gpt-4o-mini', // JSON_MODEL_PRIMARY from Python
+      'gpt-4o',      // TEXT_MODEL_PRIMARY from Python  
+      0.2            // temperature from Python
     );
 
     // Parse response
