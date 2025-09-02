@@ -21,8 +21,8 @@ on:
 
 env:
   BASE_URL: https://prompt2story.vercel.app
-  API_URL: https://prompt2story-backend.fly.dev
-  API_URL_STAGING: https://prompt2story-backend-staging.fly.dev
+  API_URL: https://prompt2story.vercel.app/api
+  API_URL_STAGING: https://prompt2story.vercel.app/api
 
 jobs:
   daily-health:
