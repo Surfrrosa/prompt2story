@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import { getEnv, getCorsHeaders } from './_env';
-import { GenerateUserStoriesSchema, UserStoriesResponseSchema, safeParseApiResponse } from '../frontend/src/lib/schemas';
+import { GenerateUserStoriesSchema, UserStoriesResponseSchema, safeParseApiResponse } from '../src/lib/schemas';
 
 // Types matching the Python backend
 interface Metadata {
