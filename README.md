@@ -215,25 +215,42 @@ Update deployment URLs in:
 
 ## 🧪 Testing
 
-### Run Backend Tests
-```bash
-cd backend
-poetry run pytest
-```
-
-### Run Frontend Tests  
+### API Tests (Vitest)
 ```bash
 cd frontend
+# Run all tests
 npm test
+
+# Run tests with UI
+npm run test:ui
+
+# Run tests once (CI mode)
+npm run test:run
+
+# Type checking
+npm run typecheck
+```
+
+### Test Against Different Environments
+```bash
+# Test against localhost (default)
+npm test
+
+# Test against preview deployment
+BASE_URL=https://your-preview-url.vercel.app npm test
+
+# Test against production
+BASE_URL=https://prompt2story.com npm test
 ```
 
 ### Manual Testing Checklist
-- [ ] Text input generates valid user stories
-- [ ] Design upload processes files correctly
-- [ ] Metadata options work as expected
-- [ ] Export functionality works in all formats
-- [ ] Feedback system captures ratings
-- [ ] Regeneration produces different results
+- [ ] Text input generates valid user stories with proper validation
+- [ ] Design upload validates file size/type correctly
+- [ ] Schema validation catches malformed inputs  
+- [ ] CORS headers work for allowed origins
+- [ ] API endpoints return structured JSON responses
+- [ ] Error responses include helpful detail messages
+- [ ] Large files are rejected with clear errors
 
 ## 🐛 Troubleshooting
 

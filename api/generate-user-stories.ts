@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
+import { getEnv, getCorsHeaders } from './_env';
+import { GenerateUserStoriesSchema, UserStoriesResponseSchema, safeParseApiResponse } from '../frontend/src/lib/schemas';
 
 // Types matching the Python backend
 interface Metadata {
@@ -33,10 +35,12 @@ interface TextInput {
   expand_all_components?: boolean;
 }
 
-// Environment validation
+// Environment validation (now using _env.ts helper)
 function validateEnvironment(): void {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('Missing required environment variable: OPENAI_API_KEY');
+  try {
+    getEnv(); // This will throw if required vars are missing
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -172,25 +176,50 @@ Return ONLY a valid JSON object matching exactly this schema—no preamble, no m
 }`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Handle CORS
+  const origin = req.headers.origin as string | null;
+  const corsHeaders = getCorsHeaders(origin);
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).setHeader(corsHeaders).end();
+  }
+
   // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ detail: 'Method not allowed' });
+    return res.status(405).setHeader(corsHeaders).json({ detail: 'Method not allowed' });
   }
 
   try {
     // Validate environment
     validateEnvironment();
+    const env = getEnv();
 
-    // Parse and validate input
-    const inputData: TextInput = req.body;
-    
-    if (!inputData.text || !inputData.text.trim()) {
-      return res.status(400).json({ detail: 'Input text cannot be empty' });
+    // Validate input using schema
+    const inputValidation = safeParseApiResponse(GenerateUserStoriesSchema, {
+      prompt: req.body.text || req.body.prompt,
+      context: req.body.context,
+      requirements: req.body.requirements,
+      persona: req.body.persona
+    });
+
+    if (!inputValidation.success) {
+      return res.status(400).setHeader(corsHeaders).json({ 
+        detail: `Input validation failed: ${inputValidation.error}` 
+      });
     }
+
+    // Convert validated input to legacy format for compatibility
+    const inputData: TextInput = {
+      text: inputValidation.data.prompt,
+      include_metadata: req.body.include_metadata,
+      infer_edge_cases: req.body.infer_edge_cases,  
+      include_advanced_criteria: req.body.include_advanced_criteria,
+      expand_all_components: req.body.expand_all_components
+    };
 
     // Initialize OpenAI client
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: env.OPENAI_API_KEY,
     });
 
     // Build prompt with options
@@ -219,27 +248,36 @@ requirements. Be thorough and complete.`;
 
     const fullPrompt = `${prompt}\n\n${JSON_INSTRUCTIONS}\n\nUnstructured text to analyze:\n${inputData.text}`;
 
-    // Call OpenAI using exact Python parameters
+    // Call OpenAI using environment-configured models
     const content = await callOpenAIJson(
       openai,
       [
         { role: 'system', content: 'You are a senior Product Owner and business analyst. Output only valid JSON.' },
         { role: 'user', content: fullPrompt }
       ],
-      'gpt-4o-mini', // JSON_MODEL_PRIMARY from Python
-      'gpt-4o',      // TEXT_MODEL_PRIMARY from Python  
+      env.JSON_MODEL || 'gpt-4o-mini', // JSON_MODEL from env
+      env.TEXT_MODEL || 'gpt-4o',      // TEXT_MODEL from env  
       0.2            // temperature from Python
     );
 
-    // Parse response
+    // Parse and validate response
     try {
       const result = extractJsonFromContent(content);
-      const response: GenerationResponse = {
-        user_stories: result.user_stories || [],
-        edge_cases: result.edge_cases || []
-      };
       
-      return res.status(200).json(response);
+      // Validate response schema
+      const responseValidation = safeParseApiResponse(UserStoriesResponseSchema, result);
+      
+      if (responseValidation.success) {
+        return res.status(200).setHeader(corsHeaders).json(responseValidation.data);
+      } else {
+        console.warn('Response validation failed:', responseValidation.error);
+        // Still return the data but with warning logged
+        const fallbackResponse: GenerationResponse = {
+          user_stories: result.user_stories || [],
+          edge_cases: result.edge_cases || []
+        };
+        return res.status(200).setHeader(corsHeaders).json(fallbackResponse);
+      }
     } catch (parseError) {
       // Fallback response if parsing fails
       const excerpt = content.length > 200 ? content.substring(0, 200) + '...' : content;
@@ -252,12 +290,12 @@ requirements. Be thorough and complete.`;
         edge_cases: ['Please review the generated content for edge cases']
       };
       
-      return res.status(200).json(fallbackResponse);
+      return res.status(200).setHeader(corsHeaders).json(fallbackResponse);
     }
 
   } catch (error) {
     console.error('Error in generate-user-stories:', error);
-    return res.status(500).json({ 
+    return res.status(500).setHeader(corsHeaders).json({ 
       detail: 'Internal server error. Check server logs for details.' 
     });
   }
