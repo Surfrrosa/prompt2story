@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getEnv, getCorsHeaders } from './_env';
-import { AnalyzeDesignSchema, safeParseApiResponse } from '../frontend/src/lib/schemas';
+import { AnalyzeDesignSchema, safeParseApiResponse } from '../src/lib/schemas';
 
 // File size and type constraints
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
