@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getEnv, getCorsHeaders } from './_env';
 import { AnalyzeDesignSchema, safeParseApiResponse } from '../src/lib/schemas';
+import { setCorsHeaders } from '../src/lib/cors-helper';
 
 // File size and type constraints
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -70,11 +71,13 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   const corsHeaders = getCorsHeaders(origin);
   
   if (req.method === 'OPTIONS') {
-    return res.status(200).setHeader(corsHeaders).end();
+    setCorsHeaders(res, corsHeaders);
+    return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).setHeader(corsHeaders).json({ detail: 'Method not allowed' });
+    setCorsHeaders(res, corsHeaders);
+    return res.status(405).json({ detail: 'Method not allowed' });
   }
 
   try {
@@ -85,7 +88,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     const inputValidation = safeParseApiResponse(AnalyzeDesignSchema, req.body);
 
     if (!inputValidation.success) {
-      return res.status(400).setHeader(corsHeaders).json({ 
+      setCorsHeaders(res, corsHeaders);
+      return res.status(400).json({ 
         detail: `Input validation failed: ${inputValidation.error}` 
       });
     }
@@ -95,7 +99,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     // Validate image data with size/type guards
     const imageValidation = validateImageData(image);
     if (!imageValidation.valid) {
-      return res.status(400).setHeader(corsHeaders).json({
+      setCorsHeaders(res, corsHeaders);
+      return res.status(400).json({
         detail: `Image validation failed: ${imageValidation.error}`
       });
     }
@@ -104,7 +109,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
     // TODO: Implement design analysis with OpenAI Vision API
     // For now, return enhanced placeholder response with validation info
-    return res.status(200).setHeader(corsHeaders).json({
+    setCorsHeaders(res, corsHeaders);
+    return res.status(200).json({
       user_stories: [{
         title: 'Design analysis validation completed',
         story: `Validated ${imageValidation.mimeType} file (${(imageValidation.sizeBytes! / 1024).toFixed(1)}KB). Vision API analysis pending implementation.`,
@@ -125,7 +131,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error) {
     console.error('Error in analyze-design:', error);
-    return res.status(500).setHeader(corsHeaders).json({ 
+    setCorsHeaders(res, corsHeaders);
+    return res.status(500).json({ 
       detail: 'Internal server error. Check server logs for details.' 
     });
   }
