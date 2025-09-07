@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "AI-powered user story generator",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "vercel dev",
     "build": "npm run build:frontend",
