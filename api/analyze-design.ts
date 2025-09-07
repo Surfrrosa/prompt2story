@@ -1,7 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getEnv, getCorsHeaders } from './_env';
 import { AnalyzeDesignSchema, safeParseApiResponse } from '../src/lib/schemas';
-import { setCorsHeaders } from '../src/lib/cors-helper';
+function setCorsHeaders(res: any, corsHeaders: any) {
+  if (corsHeaders && typeof corsHeaders === 'object') {
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+  }
+}
 
 // File size and type constraints
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -89,8 +95,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!inputValidation.success) {
       setCorsHeaders(res, corsHeaders);
-      return res.status(400).json({ 
-        detail: `Input validation failed: ${inputValidation.error}` 
+      return res.status(400).json({
+        detail: `Input validation failed: ${(inputValidation as any).error || 'Unknown validation error'}`
       });
     }
 

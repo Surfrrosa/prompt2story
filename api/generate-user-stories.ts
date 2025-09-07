@@ -1,10 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
-import fs from 'fs';
-import path from 'path';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { getEnv, getCorsHeaders } from './_env';
 import { GenerateUserStoriesSchema, UserStoriesResponseSchema, safeParseApiResponse } from '../src/lib/schemas';
-import { setCorsHeaders } from '../src/lib/cors-helper';
+function setCorsHeaders(res: any, corsHeaders: any) {
+  if (corsHeaders && typeof corsHeaders === 'object') {
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+  }
+}
 
 interface Metadata {
   priority: string;
@@ -49,14 +55,14 @@ function loadPrompt(): string {
   try {
     // Try multiple possible locations for the prompt file
     const possiblePaths = [
-      path.join(process.cwd(), 'prompts', 'user_story_prompt.md'),
-      path.join(process.cwd(), '..', 'prompts', 'user_story_prompt.md'),
-      path.join(process.cwd(), 'frontend', 'prompts', 'user_story_prompt.md'),
+      join(process.cwd(), 'prompts', 'user_story_prompt.md'),
+      join(process.cwd(), '..', 'prompts', 'user_story_prompt.md'),
+      join(process.cwd(), 'frontend', 'prompts', 'user_story_prompt.md'),
     ];
     
     for (const promptPath of possiblePaths) {
       try {
-        return fs.readFileSync(promptPath, 'utf-8');
+        return readFileSync(promptPath, 'utf-8');
       } catch (error) {
         continue;
       }
@@ -93,7 +99,7 @@ function extractJsonFromContent(content: string): any {
     return JSON.parse(content);
   } catch (e) {
     // Try extracting from markdown code fences
-    const fencedMatch = content.match(/```(?:json)?\s*(\{.*?\})\s*```/s);
+    const fencedMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
     if (fencedMatch) {
       try {
         return JSON.parse(fencedMatch[1]);
@@ -206,7 +212,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!inputValidation.success) {
       setCorsHeaders(res, corsHeaders);
       return res.status(400).json({ 
-        detail: `Input validation failed: ${inputValidation.error}` 
+        detail: `Input validation failed: ${(inputValidation as any).error || 'Unknown validation error'}` 
       });
     }
 
@@ -273,7 +279,7 @@ requirements. Be thorough and complete.`;
         setCorsHeaders(res, corsHeaders);
         return res.status(200).json(responseValidation.data);
       } else {
-        console.warn('Response validation failed:', responseValidation.error);
+        console.warn('Response validation failed:', responseValidation.success ? 'Unknown error' : (responseValidation as any).error);
         // Still return the data but with warning logged
         const fallbackResponse: GenerationResponse = {
           user_stories: result.user_stories || [],

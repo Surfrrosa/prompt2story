@@ -65,8 +65,8 @@ export function isOriginAllowed(origin: string | null, allowedOrigins?: string):
 }
 
 // Helper to get CORS headers
-export function getCorsHeaders(origin: string | null): HeadersInit {
-  const headers: HeadersInit = {
+export function getCorsHeaders(origin: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };

@@ -2,7 +2,13 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import { getEnv, getCorsHeaders } from './_env';
 import { safeParseApiResponse, UserStorySchema } from '../src/lib/schemas';
-import { setCorsHeaders } from '../src/lib/cors-helper';
+function setCorsHeaders(res: any, corsHeaders: any) {
+  if (corsHeaders && typeof corsHeaders === 'object') {
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+  }
+}
 import { z } from 'zod';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
@@ -38,8 +44,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const inputValidation = safeParseApiResponse(RegenerateRequestSchema, req.body);
     if (!inputValidation.success) {
       setCorsHeaders(res, corsHeaders);
-      return res.status(400).json({ 
-        detail: `Input validation failed: ${inputValidation.error}` 
+      return res.status(400).json({
+        detail: `Input validation failed: ${(inputValidation as any).error || 'Unknown validation error'}`
       });
     }
 
@@ -100,7 +106,7 @@ Generate ONE improved user story in JSON format. ${include_metadata ? 'Include p
       if (validation.success) {
         return res.status(200).json({ regenerated_story: validation.data });
       } else {
-        console.warn('Story validation failed:', validation.error);
+        console.warn('Story validation failed:', validation.success ? 'Unknown error' : (validation as any).error);
         const fallbackStory: any = {
           title: result.title || current_story.title,
           description: result.description || current_story.description,
