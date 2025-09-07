@@ -27,3 +27,7 @@ export async function generateUserStories(payload: unknown) {
 export async function analyzeDesign(payload: unknown) {
   return postJson('/api/analyze-design', payload);
 }
+
+export async function regenerateStory(payload: unknown) {
+  return postJson('/api/regenerate-story', payload);
+}
