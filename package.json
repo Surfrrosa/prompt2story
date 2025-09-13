@@ -16,16 +16,27 @@
     "test": "vitest run || true",
     "check-cruft": "node ./scripts/check-cruft.mjs || echo 'ℹ️  (stub) No cruft check implemented yet.'"
   },
-  "keywords": ["ai", "user-stories", "openai", "vercel", "react"],
+  "keywords": [
+    "ai",
+    "user-stories",
+    "openai",
+    "vercel",
+    "react"
+  ],
   "author": "Surfrrosa",
   "license": "MIT",
   "dependencies": {
     "@vercel/node": "^5.3.22",
+    "formidable": "^3.5.4",
     "openai": "^4.55.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "typescript": "^5.6.2",
-    "@types/node": "^24.3.0"
+    "@types/node": "^24.3.0",
+    "typescript": "^5.6.2"
+  },
+  "overrides": {
+    "path-to-regexp": "^8.0.0",
+    "undici": "^6.0.0"
   }
 }

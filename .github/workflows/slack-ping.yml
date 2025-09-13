@@ -2,6 +2,9 @@ name: Slack Ping
 on:
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   ping:
     runs-on: ubuntu-latest

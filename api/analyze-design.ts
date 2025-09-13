@@ -1,72 +1,58 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { setCorsHeaders } from './_env.js';
-import https from 'node:https';
+import formidable from 'formidable';
+import fs from 'node:fs';
 
-const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 function json(res: VercelResponse, code: number, data: any) {
   res.status(code).setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify(data));
 }
 
-function coerceJson(text: string | null | undefined): any | null {
-  if (!text) return null;
-
-  // 1) direct parse
-  try { return JSON.parse(text as string); } catch {}
-
-  const s = String(text);
-
-  // 2) strip ```json fences
-  const fenced = s.match(/```json\s*([\s\S]*?)```/i) || s.match(/```\s*([\s\S]*?)```/);
-  if (fenced?.[1]) {
-    try { return JSON.parse(fenced[1]); } catch {}
-  }
-
-  // 3) grab first balanced object
-  const start = s.indexOf('{');
-  if (start >= 0) {
-    let depth = 0;
-    for (let i = start; i < s.length; i++) {
-      if (s[i] === '{') depth++;
-      else if (s[i] === '}') {
-        depth--;
-        if (depth === 0) {
-          const candidate = s.slice(start, i + 1);
-          try { return JSON.parse(candidate); } catch {}
-          break;
-        }
-      }
-    }
-  }
-
-  return null;
-}
-
-function parseDataUrl(dataUrl: string): { mime: string; b64: string } {
-  // data:image/png;base64,AAAA...
-  const match = dataUrl.match(/^data:(.+?);base64,(.+)$/);
-  if (!match) throw new Error('Invalid data URL');
-  return { mime: match[1], b64: match[2] };
-}
-
-async function fetchAsBase64(url: string): Promise<{ mime: string; b64: string }> {
+async function parseFileUpload(req: VercelRequest): Promise<{ file: any; prompt: string }> {
   return new Promise((resolve, reject) => {
-    https.get(url, (resp) => {
-      if (resp.statusCode && resp.statusCode >= 400) {
-        reject(new Error(`Image fetch failed: ${resp.statusCode}`));
-        return;
+    const form = formidable({
+      maxFileSize: MAX_FILE_SIZE,
+      allowEmptyFiles: false,
+      minFileSize: 1,
+    });
+
+    form.parse(req, (err, fields, files) => {
+      if (err) return reject(err);
+
+      // Get uploaded file
+      const fileField = files.image || files.file || files.design;
+      if (!fileField) {
+        return reject(new Error('No file uploaded. Use field name "image", "file", or "design".'));
       }
-      const mime = resp.headers['content-type'] || 'image/jpeg';
-      const chunks: Buffer[] = [];
-      resp.on('data', (c) => chunks.push(c));
-      resp.on('end', () => {
-        const buf = Buffer.concat(chunks);
-        if (buf.length > MAX_IMAGE_BYTES) return reject(new Error('Image too large (>6MB)'));
-        resolve({ mime: String(mime), b64: buf.toString('base64') });
-      });
-    }).on('error', reject);
+
+      const uploadedFile = Array.isArray(fileField) ? fileField[0] : fileField;
+      if (!uploadedFile?.filepath) {
+        return reject(new Error('Invalid file upload.'));
+      }
+
+      // Get prompt
+      const promptField = fields.prompt || fields.context || '';
+      const prompt = Array.isArray(promptField) ? promptField[0] : promptField;
+
+      resolve({ file: uploadedFile, prompt: String(prompt || '') });
+    });
   });
+}
+
+async function fileToBase64(filePath: string, originalName: string): Promise<string> {
+  const buffer = await fs.promises.readFile(filePath);
+  const b64 = buffer.toString('base64');
+
+  // Determine MIME type
+  let mime = 'application/octet-stream';
+  const ext = originalName.toLowerCase();
+  if (ext.includes('.png')) mime = 'image/png';
+  else if (ext.includes('.jpg') || ext.includes('.jpeg')) mime = 'image/jpeg';
+  else if (ext.includes('.pdf')) mime = 'application/pdf';
+
+  return `data:${mime};base64,${b64}`;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -79,51 +65,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     if (!OPENAI_API_KEY || OPENAI_API_KEY === 'dummy-key-for-smoke-test') {
-      return json(res, 400, { error_type: 'missing_api_key', detail: 'OPENAI_API_KEY not configured for Vision.' });
+      return json(res, 400, { error_type: 'missing_api_key', detail: 'OPENAI_API_KEY not configured.' });
     }
 
-    const { image, prompt } = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
+    let base64Image: string;
+    let prompt: string = '';
 
-    if (!image || typeof image !== 'string') {
-      return json(res, 400, { error_type: 'invalid_image', detail: 'Provide `image` as https URL or data URL' });
-    }
+    const contentType = req.headers['content-type'] || '';
 
-    // Normalize to base64 for Responses API
-    let mime = 'image/png';
-    let b64 = '';
-    if (image.startsWith('data:image/')) {
-      const parsed = parseDataUrl(image);
-      mime = parsed.mime;
-      b64 = parsed.b64;
-      if (Buffer.byteLength(b64, 'base64') > MAX_IMAGE_BYTES) {
-        return json(res, 413, { detail: 'Image too large (>6MB).' });
-      }
-    } else if (image.startsWith('http://') || image.startsWith('https://')) {
-      try {
-        const fetched = await fetchAsBase64(image);
-        mime = fetched.mime;
-        b64 = fetched.b64;
-      } catch (e: any) {
-        return json(res, 400, { error_type: 'image_fetch_failed', detail: e?.message || 'Image fetch failed' });
-      }
+    if (contentType.includes('multipart/form-data')) {
+      // Handle file uploads (new method)
+      const { file, prompt: filePrompt } = await parseFileUpload(req);
+      base64Image = await fileToBase64(file.filepath, file.originalFilename || '');
+      prompt = filePrompt;
+
+      // Clean up temp file
+      await fs.promises.unlink(file.filepath).catch(() => {});
     } else {
-      return json(res, 400, { error_type: 'invalid_image', detail: 'Unsupported image scheme' });
+      // Handle JSON requests (backwards compatibility)
+      const { image, prompt: jsonPrompt } = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
+
+      if (!image || typeof image !== 'string') {
+        return json(res, 400, { error_type: 'invalid_image', detail: 'Provide image file upload or JSON with base64/URL' });
+      }
+
+      // Support base64 data URLs (existing functionality)
+      if (image.startsWith('data:')) {
+        base64Image = image;
+      } else {
+        return json(res, 400, { error_type: 'invalid_image', detail: 'JSON mode only supports base64 data URLs' });
+      }
+
+      prompt = jsonPrompt || '';
     }
 
-    // Strong anti-meta guardrails
-    const systemPrompt =
-      'You are a senior Product Owner and UX analyst. Analyze the ACTUAL CONTENT of the image. '+
-      'Do NOT describe upload tools or meta-process. Focus only on visible objects, colors, UI elements, text, and layout.';
+    // Call OpenAI Vision API
+    const systemPrompt = 'You are a senior Product Owner and UX analyst. Analyze the ACTUAL CONTENT of the image. Focus only on visible objects, colors, UI elements, text, and layout. Always respond with valid JSON in the exact format specified.';
 
     const userPrompt = [
       prompt ? `Context: ${prompt}` : '',
-      'Return ONLY strict JSON:',
-      '{ "user_stories":[{"title":"...","story":"As a ...","acceptance_criteria":["Given/When/Then", "..."]}],',
-      '  "edge_cases":["..."] }'
-    ].join('\n');
-
-    // Use Chat Completions API with base64 data URL
-    const dataUrl = `data:${mime};base64,${b64}`;
+      'Analyze this image and generate user stories about the visible content.',
+      'Return valid JSON with this exact structure:',
+      '{"user_stories":[{"title":"...","story":"As a ...","acceptance_criteria":["Given/When/Then statements"]}],"edge_cases":["potential issues"]}'
+    ].join('\\n');
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -132,8 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: process.env.JSON_VISION_MODEL || 'gpt-4o',
-        // Force strict JSON output when supported
+        model: 'gpt-4o',
         response_format: { type: 'json_object' },
         max_tokens: 4000,
         temperature: 0.3,
@@ -143,7 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             role: 'user',
             content: [
               { type: 'text', text: userPrompt },
-              { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
+              { type: 'image_url', image_url: { url: base64Image, detail: 'high' } }
             ]
           }
         ]
@@ -155,31 +138,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return json(res, 502, { error_type: 'openai_error', detail: errorText || `OpenAI ${openaiResponse.status}` });
     }
 
-    const data = await openaiResponse.json();
-    // Chat Completions: try content; JSON-mode models will return pure JSON here
+    const data = await openaiResponse.json() as any;
     const content = data.choices?.[0]?.message?.content ?? '';
 
     if (!content) {
       return json(res, 502, { error_type: 'openai_empty', detail: 'No content returned from OpenAI' });
     }
 
-    // Parse JSON robustly
-    const parsed = coerceJson(content);
-    if (parsed) return json(res, 200, parsed);
-
-    // Last-resort fallback (still image-focused)
-    return json(res, 200, {
-      user_stories: [{
-        title: 'Vision Analysis (unparsed)',
-        story: String(content).slice(0, 300).replace(/\s+/g, ' '),
-        acceptance_criteria: [
-          'Given an image was provided, when it is analyzed, then user stories reference visible elements in the image',
-          'Given unique visual features, when generating criteria, then they use concrete Given/When/Then outcomes',
-          'Given parsing failed, when returning text, then the response remains about image content (never upload mechanics)'
-        ]
-      }],
-      edge_cases: ['Model returned non-JSON text output; parser fallback used']
-    });
+    // Parse JSON response
+    try {
+      const parsed = JSON.parse(content);
+      return json(res, 200, parsed);
+    } catch (parseError) {
+      // Fallback with actual content analysis
+      return json(res, 200, {
+        user_stories: [{
+          title: 'Vision Analysis (parsing failed)',
+          story: String(content).slice(0, 300).replace(/\\s+/g, ' '),
+          acceptance_criteria: [
+            'Given an image was provided, when it is analyzed, then user stories reference visible elements',
+            'Given the analysis completes, when reviewing results, then they focus on actual image content'
+          ]
+        }],
+        edge_cases: ['JSON parsing failed - returned raw analysis']
+      });
+    }
 
   } catch (error) {
     console.error('Vision handler error:', error);
