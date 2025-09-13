@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
-import { setCorsHeaders, getEnv } from './_env';
-import { safeParseApiResponse, UserStorySchema } from '../src/lib/schemas';
+import { setCorsHeaders, getEnv } from './_env.js';
+import { safeParseApiResponse, UserStorySchema } from '../src/lib/schemas.js';
 import { z } from 'zod';
 import { readFile } from 'fs/promises';
 import { join } from 'path';

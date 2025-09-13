@@ -2,8 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { setCorsHeaders, getEnv } from './_env';
-import { GenerateUserStoriesSchema, UserStoriesResponseSchema, safeParseApiResponse } from '../src/lib/schemas';
+import { setCorsHeaders, getEnv } from './_env.js';
+import { GenerateUserStoriesSchema, UserStoriesResponseSchema, safeParseApiResponse } from '../src/lib/schemas.js';
 
 interface Metadata {
   priority: string;
