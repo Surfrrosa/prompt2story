@@ -1,5 +1,9 @@
 name: Observability and Performance Monitoring
 
+permissions:
+  contents: read
+  actions: read
+
 on:
   schedule:
     # Weekly performance check on Mondays at 8:00 AM UTC

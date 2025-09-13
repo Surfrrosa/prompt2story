@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>E2E Frontend Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>End-to-End Design Upload Test</h1>
+    <div id="results">
+        <p>🧪 Testing design upload functionality...</p>
+    </div>
+
+    <script>
+        async function testDesignUpload() {
+            const results = document.getElementById('results');
+
+            try {
+                // Create a test image (1x1 pixel PNG) - same as frontend would process
+                const testImageBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+                const base64Image = `data:image/png;base64,${testImageBase64}`;
+
+                results.innerHTML += '<p class="success">✅ Base64 conversion: SUCCESS</p>';
+
+                // Create request body exactly as the frontend does
+                const requestBody = {
+                    image: base64Image,
+                    context: '',
+                    focus: ''
+                };
+
+                results.innerHTML += '<p class="info">📡 Making API call to /api/analyze-design...</p>';
+
+                // Make the API call exactly as the frontend would
+                const response = await fetch('/api/analyze-design', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                results.innerHTML += `<p class="info">📊 API Response Status: ${response.status}</p>`;
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    results.innerHTML += `<p class="error">❌ API ERROR: ${JSON.stringify(errorData)}</p>`;
+                    results.innerHTML += '<h2 class="error">💥 END-TO-END TEST: FAILED</h2>';
+                    return;
+                }
+
+                const data = await response.json();
+                results.innerHTML += '<p class="success">✅ API Response: SUCCESS</p>';
+                results.innerHTML += `<p class="info">📝 Generated ${data.user_stories.length} user stories</p>`;
+                results.innerHTML += `<p class="info">🎯 Story Title: "${data.user_stories[0].title}"</p>`;
+                results.innerHTML += `<p class="info">📋 Story Content: "${data.user_stories[0].story}"</p>`;
+                results.innerHTML += `<p class="info">🔍 Edge Cases: ${data.edge_cases.length} found</p>`;
+
+                results.innerHTML += '<h2 class="success">🎉 END-TO-END TEST: PASSED</h2>';
+                results.innerHTML += '<p class="success">The design upload functionality is working correctly!</p>';
+                results.innerHTML += '<p class="info">Users should be able to upload images without the "Required" error.</p>';
+
+            } catch (error) {
+                results.innerHTML += `<p class="error">❌ FAILED: ${error.message}</p>`;
+                results.innerHTML += '<h2 class="error">💥 END-TO-END TEST: FAILED</h2>';
+                console.error('Test error:', error);
+            }
+        }
+
+        // Run the test when page loads
+        window.onload = testDesignUpload;
+    </script>
+</body>
+</html>

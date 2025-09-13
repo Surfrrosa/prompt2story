@@ -415,16 +415,14 @@ function App() {
         return
       }
 
+      // Create FormData for file upload
       const formData = new FormData()
-      formData.append('file', uploadedFile)
-      formData.append('include_metadata', includeMetadata.toString())
-      formData.append('infer_edge_cases', inferEdgeCases.toString())
-      formData.append('include_advanced_criteria', includeAdvancedCriteria.toString())
-      formData.append('expand_all_components', expandAllComponents.toString())
+      formData.append('image', uploadedFile)
+      formData.append('prompt', '') // Optional context
 
       const response = await fetch('/api/analyze-design', {
         method: 'POST',
-        body: formData,
+        body: formData, // Send as multipart/form-data
       })
 
       if (!response.ok) {
