@@ -1,11 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
-import fs from 'fs';
-import path from 'path';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { setCorsHeaders, getEnv } from './_env';
 import { GenerateUserStoriesSchema, UserStoriesResponseSchema, safeParseApiResponse } from '../src/lib/schemas';
 
-// Types matching the Python backend
 interface Metadata {
   priority: string;
   type: string;
@@ -48,14 +47,14 @@ function loadPrompt(): string {
   try {
     // Try multiple possible locations for the prompt file
     const possiblePaths = [
-      path.join(process.cwd(), 'prompts', 'user_story_prompt.md'),
-      path.join(process.cwd(), '..', 'prompts', 'user_story_prompt.md'),
-      path.join(process.cwd(), 'frontend', 'prompts', 'user_story_prompt.md'),
+      join(process.cwd(), 'prompts', 'user_story_prompt.md'),
+      join(process.cwd(), '..', 'prompts', 'user_story_prompt.md'),
+      join(process.cwd(), 'frontend', 'prompts', 'user_story_prompt.md'),
     ];
     
     for (const promptPath of possiblePaths) {
       try {
-        return fs.readFileSync(promptPath, 'utf-8');
+        return readFileSync(promptPath, 'utf-8');
       } catch (error) {
         continue;
       }
@@ -64,7 +63,7 @@ function loadPrompt(): string {
     // If all paths fail, use comprehensive fallback matching the original
     throw new Error('Prompt file not found');
   } catch (error) {
-    // Comprehensive fallback prompt matching the original user_story_prompt.md
+    // Comprehensive fallback prompt for user story generation
     return `# User Story Generation Prompt
 
 You are a senior Product Owner. From the following design or text, identify all relevant user stories, covering both primary actions and secondary interactions. For each user story, generate at least 3–5 detailed acceptance criteria using the Gherkin format (Given / When / Then). Consider UI elements, edge cases, different states, and common UX patterns. Do not limit your output arbitrarily. Be thorough, but keep language clear and consistent.
@@ -86,14 +85,13 @@ Return a JSON object with user_stories and edge_cases arrays.`;
   }
 }
 
-// JSON parsing logic ported from Python
 function extractJsonFromContent(content: string): any {
   // Try direct JSON parse first
   try {
     return JSON.parse(content);
   } catch (e) {
     // Try extracting from markdown code fences
-    const fencedMatch = content.match(/```(?:json)?\s*(\{.*?\})\s*```/s);
+    const fencedMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
     if (fencedMatch) {
       try {
         return JSON.parse(fencedMatch[1]);
@@ -196,11 +194,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!inputValidation.success) {
       return res.status(400).json({
-        detail: `Input validation failed: ${inputValidation.error}`
+        detail: `Input validation failed: ${(inputValidation as any).error || 'Unknown validation error'}`
       });
     }
 
-    // Convert validated input to legacy format for compatibility
+    // Convert validated input to internal format
     const inputData: TextInput = {
       text: inputValidation.data.prompt,
       include_metadata: req.body.include_metadata,
@@ -247,9 +245,9 @@ requirements. Be thorough and complete.`;
         { role: 'system', content: 'You are a senior Product Owner and business analyst. Output only valid JSON.' },
         { role: 'user', content: fullPrompt }
       ],
-      env.JSON_MODEL || 'gpt-4o-mini', // JSON_MODEL from env
-      env.TEXT_MODEL || 'gpt-4o',      // TEXT_MODEL from env  
-      0.2            // temperature from Python
+      env.JSON_MODEL || 'gpt-4o-mini', // Optimized model for JSON responses
+      env.TEXT_MODEL || 'gpt-4o',      // Fallback model for complex responses  
+      0.2            // Low temperature for consistent output
     );
 
     // Parse and validate response
@@ -262,7 +260,7 @@ requirements. Be thorough and complete.`;
       if (responseValidation.success) {
         return res.status(200).json(responseValidation.data);
       } else {
-        console.warn('Response validation failed:', responseValidation.error);
+        console.warn('Response validation failed:', responseValidation.success ? 'Unknown error' : (responseValidation as any).error);
         // Still return the data but with warning logged
         const fallbackResponse: GenerationResponse = {
           user_stories: result.user_stories || [],
@@ -281,7 +279,7 @@ requirements. Be thorough and complete.`;
         }],
         edge_cases: ['Please review the generated content for edge cases']
       };
-      
+
       return res.status(200).json(fallbackResponse);
     }
 

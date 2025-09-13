@@ -79,8 +79,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     const inputValidation = safeParseApiResponse(AnalyzeDesignSchema, req.body);
 
     if (!inputValidation.success) {
-      return res.status(400).json({ 
-        detail: `Input validation failed: ${inputValidation.error}` 
+      return res.status(400).json({
+        detail: `Input validation failed: ${(inputValidation as any).error || 'Unknown validation error'}`
       });
     }
 
