@@ -1,40 +1,44 @@
 #!/bin/bash
-# Smoke test for Prompt2Story backend
+
+# Smoke test script for Prompt2Story
+
 set -e
 
-echo "🔄 Starting Prompt2Story smoke check..."
+BASE_URL="${BASE_URL:-http://localhost:3000}"
 
-# Start FastAPI server in background
-echo "🚀 Starting FastAPI server..."
-uvicorn main:app --host 0.0.0.0 --port 8000 &
-SERVER_PID=$!
-
-# Wait for server to start
-echo "⏳ Waiting for server startup..."
-sleep 5
+echo "🔍 Running smoke tests for Prompt2Story..."
+echo "Base URL: $BASE_URL"
 
 # Test health endpoint
-echo "🩺 Testing health endpoint..."
-if curl -f http://localhost:8000/healthz; then
+echo "Testing health endpoint..."
+response=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/healthz")
+if [ "$response" -eq 200 ]; then
     echo "✅ Health check passed"
 else
-    echo "❌ Health check failed"
-    kill $SERVER_PID
+    echo "❌ Health check failed (HTTP $response)"
     exit 1
 fi
 
-# Test basic API endpoint
-echo "🧪 Testing API endpoints..."
-if curl -f -X POST http://localhost:8000/generate-user-stories \
+echo "Testing user story generation..."
+response=$(curl -s -o /dev/null -w "%{http_code}" \
+    -X POST "$BASE_URL/api/generate-user-stories" \
     -H "Content-Type: application/json" \
-    -d '{"text": "test", "include_metadata": false}' > /dev/null; then
-    echo "✅ API endpoint test passed"
+    -d '{"prompt": "Create a simple login form", "persona": "EndUser"}')
+
+if [ "$response" -eq 200 ]; then
+    echo "✅ User story generation endpoint working"
 else
-    echo "⚠️  API endpoint test failed (may need OPENAI_API_KEY)"
+    echo "❌ User story generation endpoint failed (HTTP $response)"
+    exit 1
 fi
 
-# Cleanup
-echo "🧹 Cleaning up..."
-kill $SERVER_PID
+echo "Testing frontend accessibility..."
+response=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL")
+if [ "$response" -eq 200 ]; then
+    echo "✅ Frontend accessible"
+else
+    echo "❌ Frontend not accessible (HTTP $response)"
+    exit 1
+fi
 
-echo "🎉 Smoke check completed successfully!"
+echo "🎉 All smoke tests passed!"

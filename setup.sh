@@ -1,38 +1,44 @@
 #!/bin/bash
+
+
+set -e
+
 echo "🚀 Setting up Prompt2Story development environment..."
 
-echo "📦 Setting up backend..."
-cd backend
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "⚠️  Please add your OPENAI_API_KEY to backend/.env"
-    echo "   Get your API key from: https://platform.openai.com/api-keys"
-else
-    echo "✅ Backend .env file already exists"
+if ! command -v node &> /dev/null; then
+    echo "❌ Node.js is not installed. Please install Node.js 18+ first."
+    exit 1
 fi
 
-echo "📦 Installing backend dependencies..."
-poetry install
-
-echo "📦 Setting up frontend..."
-cd ../frontend
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "✅ Frontend .env file created"
-else
-    echo "✅ Frontend .env file already exists"
+if ! command -v vercel &> /dev/null; then
+    echo "📦 Installing Vercel CLI..."
+    npm install -g vercel
 fi
 
-echo "📦 Installing frontend dependencies..."
+echo "📦 Installing root dependencies..."
 npm install
 
+echo "📦 Installing frontend dependencies..."
+cd frontend
+npm install
+cd ..
+
+echo "🔧 Setting up environment variables..."
+if [ ! -f .env ]; then
+    cp .env.example .env
+    echo "📝 Created .env file. Please add your OpenAI API key."
+else
+    echo "✅ .env file already exists."
+fi
+
+echo "✅ Setup complete! Next steps:"
 echo ""
-echo "✅ Setup complete!"
+echo "1. Add your OpenAI API key to .env:"
+echo "   OPENAI_API_KEY=your_key_here"
 echo ""
-echo "🚀 To start development servers:"
-echo "   Backend:  cd backend && poetry run dev"
-echo "   Frontend: cd frontend && npm run dev"
+echo "2. Start the development server:"
+echo "   npm run dev"
 echo ""
-echo "🔍 Health check: curl http://localhost:8000/healthz"
+echo "3. Open http://localhost:3000 in your browser"
 echo ""
-echo "⚠️  Don't forget to add your OPENAI_API_KEY to backend/.env!"
+echo "Happy coding! 🎉"

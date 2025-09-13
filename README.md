@@ -1,351 +1,286 @@
-# 🚀 Prompt2Story
+# Prompt2Story
 
-> **Transform meeting notes and requirements into structured user stories with AI**  
-> The perfect product manager tool for agile teams.
+An AI-powered tool that converts meeting notes, requirements, or design mockups into structured user stories using OpenAI's GPT-4o. Features a clean React frontend with dual input modes and robust Vercel serverless backend.
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Available-brightgreen)](https://surfrrosa-git-devin-1754832907-5c631a-shainas-projects-adbfd2be.vercel.app/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Made with](https://img.shields.io/badge/Made_with-❤️_and_AI-red.svg)](https://github.com/Surfrrosa/prompt2story)
+## Features
 
-![Prompt2Story Interface](screenshots/main-interface.png)
+- **Dual Input Modes**: Text prompts or design image uploads
+- **AI-Powered Generation**: Uses OpenAI GPT-4o for intelligent story creation
+- **Structured Output**: Generates properly formatted user stories with acceptance criteria
+- **Edge Case Detection**: Identifies potential issues and considerations
+- **Metadata Support**: Optional priority levels and story point estimates
+- **Clean UI**: Modern React interface with Tailwind CSS and Radix UI
+- **Serverless Architecture**: Vercel functions for scalable deployment
 
-## ✨ Features
-
-### 🎯 **Dual Input Modes**
-- **📝 Text Analysis**: Convert meeting notes, requirements documents, or bug reports into structured user stories
-- **🎨 Design Analysis**: Upload design files (PNG, JPG, PDF) to generate user stories for UI components and workflows
-
-### 🤖 **AI-Powered Generation**
-- **GPT-4o Integration**: Uses OpenAI's most advanced model with specialized prompts
-- **Structured Output**: Consistent format with title, story, and acceptance criteria
-- **Smart Metadata**: Optional priority, effort estimation, and persona assignment
-- **Edge Case Detection**: Identifies unusual scenarios and edge cases automatically
-
-### 🔧 **Advanced Configuration**
-- **Metadata Enhancement**: Add priority levels, effort estimates, and user personas
-- **Advanced Criteria**: Generate 5-7 detailed acceptance criteria per story
-- **Component Expansion**: Comprehensive analysis of all UI elements in designs
-- **Gherkin Format**: "Given/When/Then" structure for acceptance criteria
-
-### 📤 **Export Options**
-- **Multiple Formats**: JSON, Markdown, or copy to clipboard
-- **Project Management Ready**: Direct integration with tools like Jira, Azure DevOps
-- **Feedback System**: Rate and regenerate individual stories
-- **Interactive Results**: Expandable metadata and detailed story cards
-
-## 🎯 Use Cases
-
-**Perfect for:**
-- 👥 **Product Managers** converting meeting notes to actionable stories
-- 🎨 **UX Designers** translating mockups into development requirements  
-- 📋 **Business Analysts** structuring informal requirements
-- 🏃‍♂️ **Agile Teams** streamlining story creation workflows
-- 🔄 **DevOps Teams** converting bug reports to structured tasks
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
-- **Node.js** 18+ ([Download](https://nodejs.org/))
-- **Python** 3.12+ ([Download](https://python.org/))
-- **Poetry** ([Installation Guide](https://python-poetry.org/docs/#installation))
-- **OpenAI API Key** ([Get yours here](https://platform.openai.com/api-keys))
+- Node.js 18+ and npm/yarn/pnpm
+- OpenAI API key
 
-### 🔧 Backend Setup
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Surfrrosa/prompt2story.git
+   cd prompt2story
+   ```
+
+2. **Install dependencies**
+   ```bash
+   # Root dependencies
+   npm install
+   
+   # Frontend dependencies
+   cd frontend && npm install && cd ..
+   ```
+
+3. **Environment setup**
+   ```bash
+   # Copy environment template
+   cp .env.example .env
+   
+   # Add your OpenAI API key
+   echo "OPENAI_API_KEY=your_openai_api_key_here" >> .env
+   ```
+
+4. **Development server**
+   ```bash
+   # Start Vercel development server
+   npm run dev
+   ```
+
+## Usage
+
+1. **Text Input**: Enter meeting notes, requirements, or feature descriptions
+2. **Design Upload**: Upload wireframes, mockups, or design images  
+3. **Configure Options**: 
+   - Include advanced acceptance criteria
+   - Add priority and story point metadata
+   - Expand component details
+4. **Generate Stories**: AI processes input and creates structured user stories
+5. **Review & Refine**: Edit generated stories or regenerate with feedback
+
+## API Endpoints
+
+### Generate User Stories
+```http
+POST /api/generate-user-stories
+Content-Type: application/json
+
+{
+  "prompt": "Create a user login system with email verification",
+  "context": "Mobile-first e-commerce app",
+  "persona": "EndUser",
+  "include_advanced_criteria": true,
+  "include_metadata": true
+}
+```
+
+### Analyze Design
+```http
+POST /api/analyze-design
+Content-Type: multipart/form-data
+
+image: [uploaded file]
+include_advanced_criteria: true
+expand_all_components: true
+```
+
+### Regenerate Story
+```http
+POST /api/regenerate-story
+Content-Type: application/json
+
+{
+  "original_input": "...",
+  "current_story": {...},
+  "feedback": "Make it more specific",
+  "include_metadata": true
+}
+```
+
+## Architecture
+
+### Frontend
+- **Framework**: React 18 with TypeScript
+- **Styling**: Tailwind CSS with Radix UI components
+- **Build Tool**: Vite for fast development and optimized builds
+- **State Management**: React hooks with context for global state
+- **API Client**: Fetch-based with error handling and loading states
+
+### Backend
+- **Runtime**: Node.js serverless functions on Vercel
+- **API Framework**: Vercel Functions with TypeScript
+- **AI Integration**: OpenAI GPT-4o and GPT-4o-mini models
+- **Validation**: Zod schemas for type-safe API contracts
+- **Error Handling**: Comprehensive error boundaries and logging
+
+### Deployment
+- **Frontend**: Vercel static hosting with automatic deployments
+- **Backend**: Vercel serverless functions with edge runtime
+- **Environment**: Production-ready with environment variable management
+- **Monitoring**: Built-in Vercel analytics and error tracking
+
+## Development
+
+### Project Structure
+```
+prompt2story/
+├── frontend/           # React application
+│   ├── src/
+│   │   ├── components/ # Reusable UI components
+│   │   ├── lib/        # Utilities and API client
+│   │   └── App.tsx     # Main application component
+│   └── package.json
+├── api/                # Vercel serverless functions
+│   ├── generate-user-stories.ts
+│   ├── analyze-design.ts
+│   ├── regenerate-story.ts
+│   └── _env.ts         # Environment helpers
+├── src/lib/            # Shared schemas and utilities
+├── prompts/            # AI prompt templates
+└── package.json        # Root dependencies
+```
+
+### Scripts
 
 ```bash
-# Navigate to backend directory
-cd backend
+# Development
+npm run dev              # Start Vercel dev server
+npm run build           # Build for production
+npm run preview         # Preview production build
 
-# Install dependencies
-poetry install
+# Testing
+npm run test            # Run all tests
+npm run typecheck       # TypeScript type checking
 
-# Set up environment variables
-cp .env.example .env
-
-# Add your OpenAI API key to .env
-echo "OPENAI_API_KEY=your-api-key-here" >> .env
-
-# Start the development server
-poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-# Or use the new dev script
-poetry run dev
+# Code Quality
+npm run lint            # Lint code
+npm run format          # Format code
+npm run check-cruft     # Check for legacy backend artifacts
 ```
 
-## 🚀 Quick Setup (Automated)
-
-For first-time setup, use the automated setup script:
+### Testing
 
 ```bash
-./setup.sh
-```
-
-This will:
-- Copy environment files from examples
-- Install all dependencies
-- Provide clear next steps
-
-## 📋 Development Startup Checklist
-
-Before starting development, ensure:
-
-1. ✅ Backend .env file configured with OPENAI_API_KEY
-2. ✅ Backend server running: `cd backend && poetry run dev`
-3. ✅ Frontend server running: `cd frontend && npm run dev`
-4. ✅ Health check passes: `curl http://localhost:8000/healthz`
-
-### 🎨 Frontend Setup
-
-```bash
-# Navigate to frontend directory  
-cd frontend
-
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.example .env
-
-# Start the development server
-npm run dev
-```
-
-🎉 **That's it!** Open [http://localhost:3000](http://localhost:3000) to start generating user stories.
-
-## 📖 Usage Examples
-
-### Text Analysis Mode
-
-**Input:**
-```
-We discussed in the meeting that users should get SMS alerts when their tasks are overdue. 
-Also, marketing needs the dashboard export by Friday.
-```
-
-**Generated Output:**
-```
-📋 User Story: SMS Task Overdue Notifications
-As a task owner, I want to receive SMS alerts when my tasks become overdue 
-so that I can take immediate action to complete them.
-
-✅ Acceptance Criteria:
-- Given a task has passed its due date, when the system checks for overdue tasks, then an SMS alert should be sent to the task owner
-- Given a user receives an SMS alert, when they click the link in the message, then they should be directed to the specific overdue task
-- Given a task is marked as complete, when the system processes the update, then no further SMS alerts should be sent for that task
-```
-
-### Design Analysis Mode
-
-Upload design mockups (PNG, JPG, PDF) and get comprehensive user stories for:
-- 🔘 Interactive UI components (buttons, forms, modals)
-- 📱 User workflows and navigation paths  
-- 🎨 Visual elements and layout requirements
-- 🔄 State changes and user interactions
-
-## 🛠️ API Documentation
-
-### Core Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/generate-user-stories` | POST | Convert text input to user stories |
-| `/analyze-design` | POST | Process uploaded design files |
-| `/regenerate-story` | POST | Generate new version of specific story |
-| `/submit-feedback` | POST | Collect user ratings and comments |
-| `/healthz` | GET | Health check endpoint |
-
-### Example API Usage
-
-```bash
-# Generate user stories from text
-curl -X POST "http://localhost:8000/generate-user-stories" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Users need to login with email and password",
-    "include_metadata": true,
-    "infer_edge_cases": true
-  }'
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-#### Backend (`.env`)
-```bash
-# Required: OpenAI API key for story generation
-OPENAI_API_KEY=sk-proj-your-openai-api-key-here
-```
-
-#### Frontend (`.env`)
-```bash
-# Backend API URL (defaults to localhost for development)
-VITE_API_URL=http://localhost:8000
-```
-
-### Advanced Options
-
-- **`include_metadata`**: Add priority, effort, and persona data
-- **`infer_edge_cases`**: Generate edge case scenarios  
-- **`include_advanced_criteria`**: Create 5-7 detailed acceptance criteria
-- **`expand_all_components`**: Analyze all UI elements in designs
-
-## 🚀 Deployment
-
-### Frontend (Vercel)
-```bash
-# Build the frontend
-npm run build
-
-# Deploy to Vercel
-vercel --prod
-```
-
-### Backend (Fly.io)
-```bash
-# Deploy to Fly.io
-fly deploy
-```
-
-### Environment Setup
-Update deployment URLs in:
-- `.github/workflows/ops.yml`: CI/CD workflows
-- `ops/` scripts: Health checks and monitoring
-
-## 🧪 Testing
-
-### API Tests (Vitest)
-```bash
-cd frontend
-# Run all tests
-npm test
-
-# Run tests with UI
-npm run test:ui
-
-# Run tests once (CI mode)
-npm run test:run
+# Frontend tests
+cd frontend && npm test
 
 # Type checking
 npm run typecheck
+
+# Check for cruft
+npm run check-cruft
 ```
 
-### Test Against Different Environments
+## Deployment
+
+### Vercel (Recommended)
+
+1. **Connect repository** to Vercel dashboard
+2. **Set environment variables**:
+   ```
+   OPENAI_API_KEY=your_key_here
+   TEXT_MODEL=gpt-4o
+   JSON_MODEL=gpt-4o-mini
+   ALLOWED_ORIGINS=https://yourdomain.com
+   ```
+3. **Deploy**: Automatic deployments on push to main
+
+### Manual Deployment
+
 ```bash
-# Test against localhost (default)
-npm test
-
-# Test against preview deployment
-BASE_URL=https://your-preview-url.vercel.app npm test
-
-# Test against production
-BASE_URL=https://prompt2story.com npm test
+# Build and deploy
+npm run build
+npx vercel --prod
 ```
 
-### Manual Testing Checklist
-- [ ] Text input generates valid user stories with proper validation
-- [ ] Design upload validates file size/type correctly
-- [ ] Schema validation catches malformed inputs  
-- [ ] CORS headers work for allowed origins
-- [ ] API endpoints return structured JSON responses
-- [ ] Error responses include helpful detail messages
-- [ ] Large files are rejected with clear errors
+## Configuration
 
-## 🐛 Troubleshooting
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPENAI_API_KEY` | OpenAI API key (required) | - |
+| `TEXT_MODEL` | Model for text generation | `gpt-4o` |
+| `JSON_MODEL` | Model for JSON responses | `gpt-4o-mini` |
+| `ALLOWED_ORIGINS` | CORS allowed origins | `https://prompt2story.com` |
+| `NODE_ENV` | Environment mode | `development` |
+
+### Customization
+
+- **Prompts**: Edit files in `prompts/` directory
+- **Schemas**: Modify validation in `src/lib/schemas.ts`
+- **UI Components**: Customize in `frontend/src/components/`
+- **API Logic**: Update serverless functions in `api/`
+
+## Troubleshooting
 
 ### Common Issues
 
-**Backend won't start:**
+**Build fails**
 ```bash
-# Check Python version
-python --version  # Should be 3.12+
-
-# Reinstall dependencies
-poetry install --no-cache
-```
-
-**Frontend build fails:**
-```bash
-# Clear node modules and reinstall
+# Clear cache and reinstall
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-**API key errors:**
-- Verify your OpenAI API key is valid and has credits
-- Check the key is properly set in `backend/.env`
-- Ensure no extra spaces or quotes around the key
+**API errors**
+- Verify OpenAI API key is set correctly
+- Check Vercel function logs for detailed errors
+- Ensure CORS origins are configured properly
 
-**CORS issues:**
-- Verify `VITE_API_URL` points to the correct backend URL
-- Check backend is running on the expected port (8000)
+**TypeScript errors**
+```bash
+# Run type checking
+npm run typecheck
 
-### Getting Help
+# Update dependencies
+npm update
+```
 
-- 🐛 [Report bugs](https://github.com/Surfrrosa/prompt2story/issues)
-- 💬 [Ask questions](https://github.com/Surfrrosa/prompt2story/discussions)
-- 📧 [Contact support](mailto:support@prompt2story.com)
+### Performance
 
-## 🤝 Contributing
+- **Frontend**: Uses code splitting and lazy loading
+- **API**: Optimized with response caching and efficient prompts
+- **Images**: Automatic compression and format optimization
 
-We welcome contributions! Here's how to get started:
+## Testing Checklist
 
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make your changes** and add tests
-4. **Run the test suite**: `npm test && poetry run pytest`
-5. **Commit your changes**: `git commit -m 'Add amazing feature'`
-6. **Push to the branch**: `git push origin feature/amazing-feature`
-7. **Open a Pull Request**
+### Manual Testing
+- [ ] Text input generates valid user stories
+- [ ] Design upload works with common image formats
+- [ ] Story regeneration improves based on feedback
+- [ ] All form validations work correctly
+- [ ] Error states display helpful messages
+- [ ] Loading states provide good UX
+- [ ] Responsive design works on mobile/desktop
 
-### Development Guidelines
+### API Testing
+- [ ] All endpoints return proper HTTP status codes
+- [ ] CORS headers allow frontend access
+- [ ] Input validation rejects invalid requests
+- [ ] OpenAI integration handles rate limits gracefully
+- [ ] Error responses include helpful details
 
-- Follow existing code style and patterns
-- Add tests for new functionality
-- Update documentation for API changes
-- Use conventional commit messages
-- Ensure all CI checks pass
+## Contributing
 
-## 📋 Roadmap
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and add tests
+4. Run the test suite: `npm test`
+5. Commit your changes: `git commit -m 'Add amazing feature'`
+6. Push to the branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
 
-### 🎯 Upcoming Features
-- [ ] **Batch Processing**: Upload multiple files at once
-- [ ] **Template Library**: Pre-built story templates for common scenarios
-- [ ] **Integration APIs**: Direct export to Jira, Azure DevOps, GitHub Issues
-- [ ] **Team Collaboration**: Share and collaborate on story sets
-- [ ] **Custom Prompts**: User-defined prompt templates
-- [ ] **Analytics Dashboard**: Track story generation metrics
-
-### 🔮 Future Vision
-- [ ] **Multi-language Support**: Generate stories in different languages
-- [ ] **Voice Input**: Convert meeting recordings to user stories
-- [ ] **Smart Suggestions**: AI-powered story improvement recommendations
-- [ ] **Enterprise Features**: SSO, audit logs, advanced permissions
-
-## 🏆 Acknowledgments
-
-- **OpenAI** for providing the GPT-4o API that powers our story generation
-- **Vercel** for seamless frontend deployment and hosting
-- **Fly.io** for reliable backend infrastructure
-- **The Open Source Community** for the amazing tools and libraries that make this possible
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🔒 Security
+## Support
 
-For security guidelines and best practices, see [SECURITY.md](SECURITY.md).
-
-To report security vulnerabilities, please email [security@prompt2story.com](mailto:security@prompt2story.com).
-
----
-
-<div align="center">
-
-**Made with ❤️ by [@Surfrrosa](https://github.com/Surfrrosa)**
-
-[⭐ Star this repo](https://github.com/Surfrrosa/prompt2story) • [🐛 Report Bug](https://github.com/Surfrrosa/prompt2story/issues) • [✨ Request Feature](https://github.com/Surfrrosa/prompt2story/issues)
-
-</div>
+- **Issues**: [GitHub Issues](https://github.com/Surfrrosa/prompt2story/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Surfrrosa/prompt2story/discussions)
+- **Email**: support@prompt2story.com

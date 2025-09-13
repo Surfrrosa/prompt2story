@@ -1,17 +1,33 @@
 {
   "name": "prompt2story",
+  "version": "1.0.0",
+  "description": "AI-powered user story generator",
   "private": true,
-  "type": "module",
   "scripts": {
-    "build": "npm --prefix frontend ci && npm --prefix frontend run build",
-    "typecheck": "npm --prefix frontend run typecheck",
-    "test": "npm --prefix frontend test -- --run"
+    "dev": "vercel dev",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "preview": "cd frontend && npm run preview",
+    "test": "npm run test:frontend && npm run test:json-extractor && npm run typecheck",
+    "test:frontend": "cd frontend && npm test",
+    "test:json-extractor": "node src/lib/json-extractor.test.js",
+    "typecheck": "npm run typecheck:root && npm run typecheck:frontend",
+    "typecheck:root": "tsc --noEmit",
+    "typecheck:frontend": "cd frontend && npm run typecheck",
+    "lint": "cd frontend && npm run lint",
+    "format": "cd frontend && npm run format",
+    "check-cruft": "bash scripts/check-cruft.sh"
   },
+  "keywords": ["ai", "user-stories", "openai", "vercel", "react"],
+  "author": "Surfrrosa",
+  "license": "MIT",
   "dependencies": {
+    "@vercel/node": "^5.3.21",
     "openai": "^4.55.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "@types/node": "^20.0.0"
   }
 }
