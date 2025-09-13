@@ -1,20 +1,18 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCorsHeaders } from './_env';
 
-export const config = { runtime: "edge" };
-
-export default async function handler(req: Request) {
-  const origin = req.headers.get('origin');
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const origin = req.headers.origin as string;
   const corsHeaders = getCorsHeaders(origin);
 
+  // Set CORS headers
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
+
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers: corsHeaders });
+    return res.status(200).end();
   }
 
-  return new Response(JSON.stringify({ ok: true, service: "prompt2story", version: "v1" }), {
-    status: 200,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      ...corsHeaders
-    }
-  });
+  return res.status(200).json({ ok: true, service: "prompt2story", version: "v1" });
 }
