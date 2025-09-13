@@ -2,13 +2,20 @@
 // Centralized env + CORS helpers. (Breadcrumb: single source of truth for headers.)
 import type { VercelResponse } from '@vercel/node';
 
-let envCache: null | { OPENAI_API_KEY?: string; ALLOWED_ORIGINS?: string } = null;
+let envCache: null | {
+  OPENAI_API_KEY?: string;
+  ALLOWED_ORIGINS?: string;
+  JSON_MODEL?: string;
+  TEXT_MODEL?: string;
+} = null;
 
 export function getEnv() {
   if (envCache) return envCache;
   envCache = {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS, // comma or space sep; supports wildcard later
+    JSON_MODEL: process.env.JSON_MODEL,
+    TEXT_MODEL: process.env.TEXT_MODEL,
   };
   return envCache;
 }
