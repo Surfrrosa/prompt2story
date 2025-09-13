@@ -1,126 +1,191 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { setCorsHeaders, getEnv } from './_env.js';
-import { AnalyzeDesignSchema, safeParseApiResponse } from '../src/lib/schemas.js';
+import { setCorsHeaders } from './_env.js';
+import https from 'node:https';
 
-// File size and type constraints
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_MIME_TYPES = [
-  'image/jpeg',
-  'image/jpg', 
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'application/pdf'
-];
+const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 
-// Helper to validate base64 image data
-function validateImageData(imageData: string): { valid: boolean; error?: string; mimeType?: string; sizeBytes?: number } {
-  try {
-    // Check if it's a data URL
-    if (!imageData.startsWith('data:')) {
-      return { valid: false, error: 'Invalid image data format. Expected base64 data URL.' };
-    }
-
-    // Extract MIME type and base64 data
-    const [header, base64Data] = imageData.split(',');
-    if (!header || !base64Data) {
-      return { valid: false, error: 'Invalid data URL format' };
-    }
-
-    const mimeMatch = header.match(/data:([^;]+)/);
-    if (!mimeMatch) {
-      return { valid: false, error: 'Could not determine MIME type' };
-    }
-
-    const mimeType = mimeMatch[1];
-    
-    // Check allowed MIME types
-    if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
-      return { 
-        valid: false, 
-        error: `Unsupported file type: ${mimeType}. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}` 
-      };
-    }
-
-    // Estimate file size from base64 (base64 is ~33% larger than binary)
-    const sizeBytes = Math.floor((base64Data.length * 3) / 4);
-    
-    if (sizeBytes > MAX_FILE_SIZE) {
-      return { 
-        valid: false, 
-        error: `File too large: ${(sizeBytes / 1024 / 1024).toFixed(1)}MB. Maximum allowed: ${MAX_FILE_SIZE / 1024 / 1024}MB` 
-      };
-    }
-
-    // Basic base64 validation
-    const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
-    if (!base64Regex.test(base64Data)) {
-      return { valid: false, error: 'Invalid base64 encoding' };
-    }
-
-    return { valid: true, mimeType, sizeBytes };
-  } catch (error) {
-    return { valid: false, error: 'Error validating image data' };
-  }
+function json(res: VercelResponse, code: number, data: any) {
+  res.status(code).setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(data));
 }
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+function coerceJson(text: string | null | undefined): any | null {
+  if (!text) return null;
+
+  // 1) direct parse
+  try { return JSON.parse(text as string); } catch {}
+
+  const s = String(text);
+
+  // 2) strip ```json fences
+  const fenced = s.match(/```json\s*([\s\S]*?)```/i) || s.match(/```\s*([\s\S]*?)```/);
+  if (fenced?.[1]) {
+    try { return JSON.parse(fenced[1]); } catch {}
+  }
+
+  // 3) grab first balanced object
+  const start = s.indexOf('{');
+  if (start >= 0) {
+    let depth = 0;
+    for (let i = start; i < s.length; i++) {
+      if (s[i] === '{') depth++;
+      else if (s[i] === '}') {
+        depth--;
+        if (depth === 0) {
+          const candidate = s.slice(start, i + 1);
+          try { return JSON.parse(candidate); } catch {}
+          break;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function parseDataUrl(dataUrl: string): { mime: string; b64: string } {
+  // data:image/png;base64,AAAA...
+  const match = dataUrl.match(/^data:(.+?);base64,(.+)$/);
+  if (!match) throw new Error('Invalid data URL');
+  return { mime: match[1], b64: match[2] };
+}
+
+async function fetchAsBase64(url: string): Promise<{ mime: string; b64: string }> {
+  return new Promise((resolve, reject) => {
+    https.get(url, (resp) => {
+      if (resp.statusCode && resp.statusCode >= 400) {
+        reject(new Error(`Image fetch failed: ${resp.statusCode}`));
+        return;
+      }
+      const mime = resp.headers['content-type'] || 'image/jpeg';
+      const chunks: Buffer[] = [];
+      resp.on('data', (c) => chunks.push(c));
+      resp.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        if (buf.length > MAX_IMAGE_BYTES) return reject(new Error('Image too large (>6MB)'));
+        resolve({ mime: String(mime), b64: buf.toString('base64') });
+      });
+    }).on('error', reject);
+  });
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = (req.headers.origin as string) ?? null;
   setCorsHeaders(res, origin);
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ detail: 'Method not allowed' });
+  if (req.method !== 'POST') return json(res, 405, { detail: 'Method not allowed' });
 
   try {
-    // Validate environment
-    const env = getEnv();
-
-    // Validate input using schema
-    const inputValidation = safeParseApiResponse(AnalyzeDesignSchema, req.body);
-
-    if (!inputValidation.success) {
-      return res.status(400).json({
-        detail: `Input validation failed: ${(inputValidation as any).error || 'Unknown validation error'}`
-      });
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    if (!OPENAI_API_KEY || OPENAI_API_KEY === 'dummy-key-for-smoke-test') {
+      return json(res, 400, { error_type: 'missing_api_key', detail: 'OPENAI_API_KEY not configured for Vision.' });
     }
 
-    const { image, context, focus } = inputValidation.data;
+    const { image, prompt } = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
 
-    // Validate image data with size/type guards
-    const imageValidation = validateImageData(image);
-    if (!imageValidation.valid) {
-      return res.status(400).json({
-        detail: `Image validation failed: ${imageValidation.error}`
-      });
+    if (!image || typeof image !== 'string') {
+      return json(res, 400, { error_type: 'invalid_image', detail: 'Provide `image` as https URL or data URL' });
     }
 
-    console.log(`Design analysis request: ${imageValidation.mimeType}, ${(imageValidation.sizeBytes! / 1024).toFixed(1)}KB`);
+    // Normalize to base64 for Responses API
+    let mime = 'image/png';
+    let b64 = '';
+    if (image.startsWith('data:image/')) {
+      const parsed = parseDataUrl(image);
+      mime = parsed.mime;
+      b64 = parsed.b64;
+      if (Buffer.byteLength(b64, 'base64') > MAX_IMAGE_BYTES) {
+        return json(res, 413, { detail: 'Image too large (>6MB).' });
+      }
+    } else if (image.startsWith('http://') || image.startsWith('https://')) {
+      try {
+        const fetched = await fetchAsBase64(image);
+        mime = fetched.mime;
+        b64 = fetched.b64;
+      } catch (e: any) {
+        return json(res, 400, { error_type: 'image_fetch_failed', detail: e?.message || 'Image fetch failed' });
+      }
+    } else {
+      return json(res, 400, { error_type: 'invalid_image', detail: 'Unsupported image scheme' });
+    }
 
-    // TODO: Implement design analysis with OpenAI Vision API
-    // For now, return enhanced placeholder response with validation info
-    return res.status(200).json({
+    // Strong anti-meta guardrails
+    const systemPrompt =
+      'You are a senior Product Owner and UX analyst. Analyze the ACTUAL CONTENT of the image. '+
+      'Do NOT describe upload tools or meta-process. Focus only on visible objects, colors, UI elements, text, and layout.';
+
+    const userPrompt = [
+      prompt ? `Context: ${prompt}` : '',
+      'Return ONLY strict JSON:',
+      '{ "user_stories":[{"title":"...","story":"As a ...","acceptance_criteria":["Given/When/Then", "..."]}],',
+      '  "edge_cases":["..."] }'
+    ].join('\n');
+
+    // Use Chat Completions API with base64 data URL
+    const dataUrl = `data:${mime};base64,${b64}`;
+
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: process.env.JSON_VISION_MODEL || 'gpt-4o',
+        // Force strict JSON output when supported
+        response_format: { type: 'json_object' },
+        max_tokens: 4000,
+        temperature: 0.3,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: userPrompt },
+              { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text().catch(() => '');
+      return json(res, 502, { error_type: 'openai_error', detail: errorText || `OpenAI ${openaiResponse.status}` });
+    }
+
+    const data = await openaiResponse.json();
+    // Chat Completions: try content; JSON-mode models will return pure JSON here
+    const content = data.choices?.[0]?.message?.content ?? '';
+
+    if (!content) {
+      return json(res, 502, { error_type: 'openai_empty', detail: 'No content returned from OpenAI' });
+    }
+
+    // Parse JSON robustly
+    const parsed = coerceJson(content);
+    if (parsed) return json(res, 200, parsed);
+
+    // Last-resort fallback (still image-focused)
+    return json(res, 200, {
       user_stories: [{
-        title: 'Design analysis validation completed',
-        story: `Validated ${imageValidation.mimeType} file (${(imageValidation.sizeBytes! / 1024).toFixed(1)}KB). Vision API analysis pending implementation.`,
+        title: 'Vision Analysis (unparsed)',
+        story: String(content).slice(0, 300).replace(/\s+/g, ' '),
         acceptance_criteria: [
-          'File type validation passes',
-          'File size is within limits', 
-          'Base64 encoding is valid',
-          'Context and focus parameters are optional and validated'
+          'Given an image was provided, when it is analyzed, then user stories reference visible elements in the image',
+          'Given unique visual features, when generating criteria, then they use concrete Given/When/Then outcomes',
+          'Given parsing failed, when returning text, then the response remains about image content (never upload mechanics)'
         ]
       }],
-      edge_cases: [
-        'Files larger than 10MB are rejected',
-        'Only image and PDF files are allowed',
-        'Invalid base64 encoding is caught',
-        'Malformed data URLs are rejected'
-      ]
+      edge_cases: ['Model returned non-JSON text output; parser fallback used']
     });
 
   } catch (error) {
-    console.error('Error in analyze-design:', error);
-    return res.status(500).json({ 
-      detail: 'Internal server error. Check server logs for details.' 
+    console.error('Vision handler error:', error);
+    return json(res, 500, {
+      error_type: 'handler_error',
+      detail: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 }
