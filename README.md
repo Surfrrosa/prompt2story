@@ -3,9 +3,14 @@
 > **Transform meeting notes and requirements into structured user stories with AI**  
 > The perfect product manager tool for agile teams.
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Available-brightgreen)](https://surfrrosa-git-devin-1754832907-5c631a-shainas-projects-adbfd2be.vercel.app/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Made with](https://img.shields.io/badge/Made_with-❤️_and_AI-red.svg)](https://github.com/Surfrrosa/prompt2story)
+
+> **Architecture at a glance**
+> - Frontend: `/frontend` (Vite + React + Tailwind + shadcn)
+> - API (serverless on Vercel): `/api` (TypeScript)
+> - Shared types/schemas: `/src/lib` (Zod)
+> - Env usage: Only serverless routes read `OPENAI_API_KEY` (never expose it to the browser).
 
 ![Prompt2Story Interface](screenshots/main-interface.png)
 

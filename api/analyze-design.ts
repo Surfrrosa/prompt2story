@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getEnv, getCorsHeaders } from './_env';
+import { setCorsHeaders, getEnv } from './_env';
 import { AnalyzeDesignSchema, safeParseApiResponse } from '../src/lib/schemas';
 
 // File size and type constraints
@@ -65,17 +65,11 @@ function validateImageData(imageData: string): { valid: boolean; error?: string;
 }
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
-  // Handle CORS
-  const origin = req.headers.origin as string | null;
-  const corsHeaders = getCorsHeaders(origin);
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).setHeader(corsHeaders).end();
-  }
+  const origin = (req.headers.origin as string) ?? null;
+  setCorsHeaders(res, origin);
 
-  if (req.method !== 'POST') {
-    return res.status(405).setHeader(corsHeaders).json({ detail: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ detail: 'Method not allowed' });
 
   try {
     // Validate environment
@@ -85,7 +79,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     const inputValidation = safeParseApiResponse(AnalyzeDesignSchema, req.body);
 
     if (!inputValidation.success) {
-      return res.status(400).setHeader(corsHeaders).json({ 
+      return res.status(400).json({ 
         detail: `Input validation failed: ${inputValidation.error}` 
       });
     }
@@ -95,7 +89,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     // Validate image data with size/type guards
     const imageValidation = validateImageData(image);
     if (!imageValidation.valid) {
-      return res.status(400).setHeader(corsHeaders).json({
+      return res.status(400).json({
         detail: `Image validation failed: ${imageValidation.error}`
       });
     }
@@ -104,7 +98,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
     // TODO: Implement design analysis with OpenAI Vision API
     // For now, return enhanced placeholder response with validation info
-    return res.status(200).setHeader(corsHeaders).json({
+    return res.status(200).json({
       user_stories: [{
         title: 'Design analysis validation completed',
         story: `Validated ${imageValidation.mimeType} file (${(imageValidation.sizeBytes! / 1024).toFixed(1)}KB). Vision API analysis pending implementation.`,
@@ -125,7 +119,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error) {
     console.error('Error in analyze-design:', error);
-    return res.status(500).setHeader(corsHeaders).json({ 
+    return res.status(500).json({ 
       detail: 'Internal server error. Check server logs for details.' 
     });
   }

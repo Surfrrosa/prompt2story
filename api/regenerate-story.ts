@@ -1,9 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { setCorsHeaders } from './_env';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ detail: 'Method not allowed' });
-  }
+  const origin = (req.headers.origin as string) ?? null;
+  setCorsHeaders(res, origin);
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ detail: 'Method not allowed' });
 
   // TODO: Implement story regeneration with OpenAI
   console.log('Regenerate story request:', req.body);

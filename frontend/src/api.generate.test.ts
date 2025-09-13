@@ -5,11 +5,11 @@ import supertest from 'supertest';
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 describe('API Generate User Stories', () => {
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: any;
 
   beforeAll(() => {
     // Set up supertest with base URL
-    request = supertest(BASE_URL);
+    request = supertest.agent(BASE_URL);
   });
 
   describe('POST /api/generate-user-stories', () => {
