@@ -2,6 +2,15 @@
 
 An AI-powered tool that converts meeting notes, requirements, or design mockups into structured user stories using OpenAI's GPT-4o. Features a clean React frontend with dual input modes and robust Vercel serverless backend.
 
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Made with](https://img.shields.io/badge/Made_with-❤️_and_AI-red.svg)](https://github.com/Surfrrosa/prompt2story)
+
+> **Architecture at a glance**
+> - Frontend: `/frontend` (Vite + React + Tailwind + shadcn)
+> - API (serverless on Vercel): `/api` (TypeScript)
+> - Shared types/schemas: `/src/lib` (Zod)
+> - Env usage: Only serverless routes read `OPENAI_API_KEY` (never expose it to the browser).
+
 ## Features
 
 - **Dual Input Modes**: Text prompts or design image uploads

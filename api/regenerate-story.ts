@@ -1,14 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
-import { getEnv, getCorsHeaders } from './_env';
+import { setCorsHeaders, getEnv } from './_env';
 import { safeParseApiResponse, UserStorySchema } from '../src/lib/schemas';
-function setCorsHeaders(res: any, corsHeaders: any) {
-  if (corsHeaders && typeof corsHeaders === 'object') {
-    Object.entries(corsHeaders).forEach(([key, value]) => {
-      res.setHeader(key, value);
-    });
-  }
-}
 import { z } from 'zod';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
@@ -27,23 +20,15 @@ const RegenerateRequestSchema = z.object({
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const origin = req.headers.origin as string | null;
-  const corsHeaders = getCorsHeaders(origin);
+  const origin = (req.headers.origin as string) ?? null;
+  setCorsHeaders(res, origin);
 
-  if (req.method === 'OPTIONS') {
-    setCorsHeaders(res, corsHeaders);
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    setCorsHeaders(res, corsHeaders);
-    return res.status(405).json({ detail: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ detail: 'Method not allowed' });
 
   try {
     const inputValidation = safeParseApiResponse(RegenerateRequestSchema, req.body);
     if (!inputValidation.success) {
-      setCorsHeaders(res, corsHeaders);
       return res.status(400).json({
         detail: `Input validation failed: ${(inputValidation as any).error || 'Unknown validation error'}`
       });
@@ -87,22 +72,18 @@ Generate ONE improved user story in JSON format. ${include_metadata ? 'Include p
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
-      setCorsHeaders(res, corsHeaders);
       return res.status(500).json({ detail: 'No response from OpenAI' });
     }
 
     const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      setCorsHeaders(res, corsHeaders);
       return res.status(500).json({ detail: 'Could not extract JSON from response' });
     }
 
     try {
       const result = JSON.parse(jsonMatch[0]);
       const validation = safeParseApiResponse(UserStorySchema, result);
-      
-      setCorsHeaders(res, corsHeaders);
-      
+
       if (validation.success) {
         return res.status(200).json({ regenerated_story: validation.data });
       } else {
@@ -112,25 +93,23 @@ Generate ONE improved user story in JSON format. ${include_metadata ? 'Include p
           description: result.description || current_story.description,
           acceptance_criteria: result.acceptance_criteria || current_story.acceptance_criteria || []
         };
-        
+
         if (include_metadata) {
           fallbackStory.priority = result.priority || current_story.priority || 'Medium';
           fallbackStory.story_points = result.story_points || current_story.story_points || 3;
         }
-        
+
         return res.status(200).json({ regenerated_story: fallbackStory });
       }
     } catch (parseError) {
       console.error('JSON parsing failed:', parseError);
-      setCorsHeaders(res, corsHeaders);
       return res.status(500).json({ detail: 'Failed to parse regenerated story' });
     }
 
   } catch (error) {
     console.error('Error in regenerate-story:', error);
-    setCorsHeaders(res, corsHeaders);
-    return res.status(500).json({ 
-      detail: 'Internal server error. Check server logs for details.' 
+    return res.status(500).json({
+      detail: 'Internal server error. Check server logs for details.'
     });
   }
 }

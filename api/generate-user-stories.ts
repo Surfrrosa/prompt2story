@@ -2,15 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { getEnv, getCorsHeaders } from './_env';
+import { setCorsHeaders, getEnv } from './_env';
 import { GenerateUserStoriesSchema, UserStoriesResponseSchema, safeParseApiResponse } from '../src/lib/schemas';
-function setCorsHeaders(res: any, corsHeaders: any) {
-  if (corsHeaders && typeof corsHeaders === 'object') {
-    Object.entries(corsHeaders).forEach(([key, value]) => {
-      res.setHeader(key, value);
-    });
-  }
-}
 
 interface Metadata {
   priority: string;
@@ -43,10 +36,9 @@ interface TextInput {
 
 // Environment validation (now using _env.ts helper)
 function validateEnvironment(): void {
-  try {
-    getEnv(); // This will throw if required vars are missing
-  } catch (error) {
-    throw error;
+  const { OPENAI_API_KEY } = getEnv();
+  if (!OPENAI_API_KEY) {
+    throw new Error('Missing required environment variable: OPENAI_API_KEY');
   }
 }
 
@@ -181,20 +173,11 @@ Return ONLY a valid JSON object matching exactly this schema—no preamble, no m
 }`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Handle CORS
-  const origin = req.headers.origin as string | null;
-  const corsHeaders = getCorsHeaders(origin);
-  
-  if (req.method === 'OPTIONS') {
-    setCorsHeaders(res, corsHeaders);
-    return res.status(200).end();
-  }
+  const origin = (req.headers.origin as string) ?? null;
+  setCorsHeaders(res, origin);
 
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    setCorsHeaders(res, corsHeaders);
-    return res.status(405).json({ detail: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ detail: 'Method not allowed' });
 
   try {
     // Validate environment
@@ -210,9 +193,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     if (!inputValidation.success) {
-      setCorsHeaders(res, corsHeaders);
-      return res.status(400).json({ 
-        detail: `Input validation failed: ${(inputValidation as any).error || 'Unknown validation error'}` 
+      return res.status(400).json({
+        detail: `Input validation failed: ${(inputValidation as any).error || 'Unknown validation error'}`
       });
     }
 
@@ -276,7 +258,6 @@ requirements. Be thorough and complete.`;
       const responseValidation = safeParseApiResponse(UserStoriesResponseSchema, result);
       
       if (responseValidation.success) {
-        setCorsHeaders(res, corsHeaders);
         return res.status(200).json(responseValidation.data);
       } else {
         console.warn('Response validation failed:', responseValidation.success ? 'Unknown error' : (responseValidation as any).error);
@@ -285,7 +266,6 @@ requirements. Be thorough and complete.`;
           user_stories: result.user_stories || [],
           edge_cases: result.edge_cases || []
         };
-        setCorsHeaders(res, corsHeaders);
         return res.status(200).json(fallbackResponse);
       }
     } catch (parseError) {
@@ -299,14 +279,12 @@ requirements. Be thorough and complete.`;
         }],
         edge_cases: ['Please review the generated content for edge cases']
       };
-      
-      setCorsHeaders(res, corsHeaders);
+
       return res.status(200).json(fallbackResponse);
     }
 
   } catch (error) {
     console.error('Error in generate-user-stories:', error);
-    setCorsHeaders(res, corsHeaders);
     return res.status(500).json({ 
       detail: 'Internal server error. Check server logs for details.' 
     });

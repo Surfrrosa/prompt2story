@@ -1,85 +1,56 @@
-// Environment variable helper for API endpoints
-// Provides type-safe access to required and optional environment variables
+// api/_env.ts
+// Centralized env + CORS helpers. (Breadcrumb: single source of truth for headers.)
+import type { VercelResponse } from '@vercel/node';
 
-interface RequiredEnvVars {
-  OPENAI_API_KEY: string;
-}
+let envCache: null | { OPENAI_API_KEY?: string; ALLOWED_ORIGINS?: string } = null;
 
-interface OptionalEnvVars {
-  TEXT_MODEL: string;
-  JSON_MODEL: string;
-  ALLOWED_ORIGINS: string;
-  NODE_ENV: string;
-}
-
-// Cache for environment variables to avoid repeated process.env access
-let envCache: (RequiredEnvVars & Partial<OptionalEnvVars>) | null = null;
-
-export function getEnv(): RequiredEnvVars & Partial<OptionalEnvVars> {
-  if (envCache) {
-    return envCache;
-  }
-
-  // Validate required environment variables
-  const requiredVars: (keyof RequiredEnvVars)[] = ['OPENAI_API_KEY'];
-  const missing: string[] = [];
-
-  for (const varName of requiredVars) {
-    if (!process.env[varName]) {
-      missing.push(varName);
-    }
-  }
-
-  if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-  }
-
-  // Build environment object with defaults
+export function getEnv() {
+  if (envCache) return envCache;
   envCache = {
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY!,
-    TEXT_MODEL: process.env.TEXT_MODEL || 'gpt-4o',
-    JSON_MODEL: process.env.JSON_MODEL || 'gpt-4o-mini',
-    ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || 'https://prompt2story.com,https://*.vercel.app',
-    NODE_ENV: process.env.NODE_ENV || 'development',
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS, // comma or space sep; supports wildcard later
   };
-
   return envCache;
 }
 
-// Helper to check if request origin is allowed
-export function isOriginAllowed(origin: string | null, allowedOrigins?: string): boolean {
+export function isOriginAllowed(origin: string | null): boolean {
+  const { ALLOWED_ORIGINS } = getEnv();
   if (!origin) return false;
-  
-  const allowed = allowedOrigins || getEnv().ALLOWED_ORIGINS || '';
-  const origins = allowed.split(',').map(o => o.trim());
-  
-  return origins.some(allowedOrigin => {
-    // Handle wildcard subdomains like https://*.vercel.app
-    if (allowedOrigin.includes('*')) {
-      const pattern = allowedOrigin.replace(/\*/g, '.*');
-      const regex = new RegExp(`^${pattern}$`);
+  if (!ALLOWED_ORIGINS) return false;
+  const list = ALLOWED_ORIGINS.split(/[,\s]+/).filter(Boolean);
+  return list.some((allowed) => {
+    if (allowed === '*') return true;
+    if (allowed.includes('*')) {
+      // wildcard support: https://*.vercel.app
+      const regex = new RegExp('^' + allowed.split('*').map(escapeRegex).join('.*') + '$');
       return regex.test(origin);
     }
-    return allowedOrigin === origin;
+    return allowed === origin;
   });
 }
 
-// Helper to get CORS headers
 export function getCorsHeaders(origin: string | null): Record<string, string> {
   const headers: Record<string, string> = {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Vary': 'Origin',
   };
-
   if (isOriginAllowed(origin)) {
     headers['Access-Control-Allow-Origin'] = origin!;
     headers['Access-Control-Allow-Credentials'] = 'true';
   }
-
   return headers;
 }
 
-// Reset cache (useful for testing)
+export function setCorsHeaders(res: VercelResponse, origin: string | null): void {
+  const headers = getCorsHeaders(origin);
+  for (const [k, v] of Object.entries(headers)) res.setHeader(k, v);
+}
+
+function escapeRegex(str: string) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export function resetEnvCache(): void {
   envCache = null;
 }
