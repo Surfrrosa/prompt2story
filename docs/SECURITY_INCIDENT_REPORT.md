@@ -71,14 +71,14 @@ All endpoints now include:
 ### ⚠️ User Action Required
 1. **Revoke and rotate the exposed OpenAI API key** immediately:
    - Log into OpenAI Platform (https://platform.openai.com/api-keys)
-   - Revoke key: `sk-proj-HN7TcC...` (exposed key redacted for security)
+   - Revoke the previously exposed OpenAI API key (check git history for details)
    - Generate new API key
    - Update production environment variables (Vercel dashboard)
 
 2. **Check git commit history** for the exposed key:
    ```bash
-   git log --all --grep="sk-proj" --oneline
-   git log --all -S"sk-proj" --oneline
+   git log --all --grep="OpenAI" --oneline
+   git log --all -S"API_KEY" --oneline
    ```
    If found in commit history, consider repository history rewriting or new repository creation.
 
