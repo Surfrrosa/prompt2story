@@ -90,15 +90,18 @@ function App() {
         return
       }
 
-      const data = await generateUserStories({
+      const response = await generateUserStories({
         text: inputText,
         include_metadata: includeMetadata,
         infer_edge_cases: inferEdgeCases,
         include_advanced_criteria: includeAdvancedCriteria,
         expand_all_components: expandAllComponents
       })
-      console.log('API Response:', data)
+      console.log('API Response:', response)
       console.log('Include Metadata:', includeMetadata)
+
+      // Extract the actual data from the API response
+      const data = response.data
       if (data.user_stories && data.user_stories.length > 0) {
         console.log('First story metadata:', data.user_stories[0].metadata)
       }
@@ -129,11 +132,16 @@ function App() {
       
       if (includeMetadata && story.metadata) {
         markdown += '\n<details><summary>🧩 Metadata</summary>\n\n'
-        markdown += `- Priority: ${story.metadata.priority}\n`
-        markdown += `- Type: ${story.metadata.type}\n`
-        markdown += `- Component: ${story.metadata.component}\n`
-        markdown += `- Effort: ${story.metadata.effort}\n`
-        markdown += `- Persona: ${story.metadata.persona === 'Other' && story.metadata.persona_other ? story.metadata.persona_other : story.metadata.persona}\n`
+        if (story.metadata.priority) markdown += `- Priority: ${story.metadata.priority}\n`
+        if (story.metadata.type) markdown += `- Type: ${story.metadata.type}\n`
+        if (story.metadata.component) markdown += `- Component: ${story.metadata.component}\n`
+        if (story.metadata.effort) markdown += `- Effort: ${story.metadata.effort}\n`
+        if (story.metadata.persona) {
+          const persona = story.metadata.persona === 'Other' && story.metadata.persona_other
+            ? story.metadata.persona_other
+            : story.metadata.persona
+          markdown += `- Persona: ${persona}\n`
+        }
         markdown += '\n</details>\n'
       }
       
@@ -278,7 +286,7 @@ function App() {
     try {
       const currentStory = result.user_stories[storyIndex]
 
-      const response = await postJson('/api/regenerate-story', {
+      const apiResponse = await postJson('/api/regenerate-story', {
         original_input: originalInput,
         current_story: currentStory,
         feedback: feedbackStates.get(storyIndex)?.text || '',
@@ -286,7 +294,7 @@ function App() {
       })
 
       // Extract the regenerated story from the response
-      const regeneratedStory = response.regenerated_story || response
+      const regeneratedStory = apiResponse.data?.regenerated_story || apiResponse.regenerated_story || apiResponse
       console.log('Regenerated story:', regeneratedStory)
       console.log('Story index:', storyIndex)
 
@@ -451,7 +459,11 @@ function App() {
         throw new Error(errorData.detail || `Server error: ${response.status}`)
       }
 
-      const data: GenerationResponse = await response.json()
+      const apiResponse = await response.json()
+      console.log('Image API Response:', apiResponse)
+
+      // Extract the actual data from the API response
+      const data: GenerationResponse = apiResponse.data
       setResult(data)
     } catch (err) {
       if (err instanceof TypeError && err.message.includes('fetch')) {
@@ -904,7 +916,20 @@ function App() {
                 Generated User Stories
               </h2>
               <div className="space-y-4">
-                {result.user_stories.map((story, index) => (
+                {(() => {
+                  try {
+                    console.log('Rendering user stories, result:', result)
+                    console.log('result.user_stories:', result.user_stories)
+                    console.log('result.user_stories length:', result.user_stories?.length)
+
+                    if (!result.user_stories || !Array.isArray(result.user_stories)) {
+                      console.error('user_stories is not an array:', result.user_stories)
+                      return <div className="text-red-400">Error: Invalid user stories data</div>
+                    }
+
+                    return result.user_stories.map((story, index) => {
+                      console.log(`Rendering story ${index}:`, story)
+                      return (
                   <Card key={index} className="bg-charcoal-lighter border-charcoal-light rounded-xl">
                     <CardHeader>
                       <CardTitle className="text-pure-white">{story.title}</CardTitle>
@@ -943,41 +968,51 @@ function App() {
                           {expandedMetadata.has(index) && (
                             <div className="mt-3 p-3 bg-charcoal-light rounded-lg border border-charcoal-light">
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-soft-gray">Priority:</span>
-                                  <Badge 
-                                    variant="outline" 
-                                    className={`${
-                                      story.metadata.priority === 'High' ? 'border-red-500 text-red-400' :
-                                      story.metadata.priority === 'Medium' ? 'border-yellow-500 text-yellow-400' :
-                                      'border-green-500 text-green-400'
-                                    }`}
-                                  >
-                                    {story.metadata.priority}
-                                  </Badge>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-soft-gray">Type:</span>
-                                  <Badge variant="outline" className="border-purple-500 text-purple-400">
-                                    {story.metadata.type}
-                                  </Badge>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-soft-gray">Component:</span>
-                                  <span className="text-soft-gray">{story.metadata.component}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-soft-gray">Effort:</span>
-                                  <span className="text-soft-gray">{story.metadata.effort}</span>
-                                </div>
-                                <div className="flex justify-between sm:col-span-2">
-                                  <span className="text-soft-gray">Persona:</span>
-                                  <span className="text-soft-gray">
-                                    {story.metadata.persona === 'Other' && story.metadata.persona_other 
-                                      ? story.metadata.persona_other 
-                                      : story.metadata.persona}
-                                  </span>
-                                </div>
+                                {story.metadata.priority && (
+                                  <div className="flex justify-between">
+                                    <span className="text-soft-gray">Priority:</span>
+                                    <Badge
+                                      variant="outline"
+                                      className={`${
+                                        story.metadata.priority === 'High' ? 'border-red-500 text-red-400' :
+                                        story.metadata.priority === 'Medium' ? 'border-yellow-500 text-yellow-400' :
+                                        'border-green-500 text-green-400'
+                                      }`}
+                                    >
+                                      {story.metadata.priority}
+                                    </Badge>
+                                  </div>
+                                )}
+                                {story.metadata.type && (
+                                  <div className="flex justify-between">
+                                    <span className="text-soft-gray">Type:</span>
+                                    <Badge variant="outline" className="border-purple-500 text-purple-400">
+                                      {story.metadata.type}
+                                    </Badge>
+                                  </div>
+                                )}
+                                {story.metadata.component && (
+                                  <div className="flex justify-between">
+                                    <span className="text-soft-gray">Component:</span>
+                                    <span className="text-soft-gray">{story.metadata.component}</span>
+                                  </div>
+                                )}
+                                {story.metadata.effort && (
+                                  <div className="flex justify-between">
+                                    <span className="text-soft-gray">Effort:</span>
+                                    <span className="text-soft-gray">{story.metadata.effort}</span>
+                                  </div>
+                                )}
+                                {story.metadata.persona && (
+                                  <div className="flex justify-between sm:col-span-2">
+                                    <span className="text-soft-gray">Persona:</span>
+                                    <span className="text-soft-gray">
+                                      {story.metadata.persona === 'Other' && story.metadata.persona_other
+                                        ? story.metadata.persona_other
+                                        : story.metadata.persona}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
@@ -1070,7 +1105,24 @@ function App() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                      )
+                    })
+                  } catch (error) {
+                    console.error('Error rendering user stories:', error)
+                    return (
+                      <div className="text-red-400 p-4 bg-red-900/20 border border-red-800 rounded-lg">
+                        <h3 className="font-medium mb-2">Rendering Error</h3>
+                        <p>Error displaying user stories: {error instanceof Error ? error.message : 'Unknown error'}</p>
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-sm">Debug Info</summary>
+                          <pre className="text-xs mt-2 bg-black/30 p-2 rounded overflow-auto">
+                            {JSON.stringify(result, null, 2)}
+                          </pre>
+                        </details>
+                      </div>
+                    )
+                  }
+                })()}
               </div>
             </div>
 
