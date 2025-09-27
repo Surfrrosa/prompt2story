@@ -10,8 +10,8 @@ permissions:
   security-events: write
 
 jobs:
-  api-tests:
-    name: API Tests & Type Checking
+  api-validation:
+    name: API Tests & TypeScript
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -45,8 +45,8 @@ jobs:
           path: coverage/
           retention-days: 30
 
-  frontend-build:
-    name: Frontend Build & Quality
+  frontend-validation:
+    name: Frontend TypeScript & Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -71,7 +71,7 @@ jobs:
   quality-gates:
     name: Quality Gates
     runs-on: ubuntu-latest
-    needs: [api-tests, frontend-build]
+    needs: [api-validation, frontend-validation]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
