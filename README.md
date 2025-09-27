@@ -1,8 +1,13 @@
 # Prompt2Story
 
-An AI-powered tool that converts meeting notes, requirements, or design mockups into structured user stories using OpenAI's GPT-4o. Features a clean React frontend with dual input modes and robust Vercel serverless backend.
+> **Enterprise-grade AI-powered user story generator with comprehensive security and testing**
+
+Transform meeting notes, requirements, or design mockups into structured user stories using OpenAI's GPT-4o. Built with production-ready security, rate limiting, comprehensive testing, and professional error handling.
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6+-blue)](https://www.typescriptlang.org/)
+[![Testing](https://img.shields.io/badge/Coverage-65%25+-green)](vitest)
+[![Security](https://img.shields.io/badge/Security-Hardened-green)](docs/SECURITY.md)
 [![Made with](https://img.shields.io/badge/Made_with-❤️_and_AI-red.svg)](https://github.com/Surfrrosa/prompt2story)
 
 > **Architecture at a glance**
@@ -13,20 +18,39 @@ An AI-powered tool that converts meeting notes, requirements, or design mockups 
 
 ## Features
 
+### 🎯 Core Functionality
 - **Dual Input Modes**: Text prompts or design image uploads
 - **AI-Powered Generation**: Uses OpenAI GPT-4o for intelligent story creation
 - **Structured Output**: Generates properly formatted user stories with acceptance criteria
 - **Edge Case Detection**: Identifies potential issues and considerations
 - **Metadata Support**: Optional priority levels and story point estimates
-- **Clean UI**: Modern React interface with Tailwind CSS and Radix UI
-- **Serverless Architecture**: Vercel functions for scalable deployment
+
+### 🔒 Enterprise Security
+- **Rate Limiting**: Tier-based protection (5-60 requests/minute by endpoint)
+- **API Security**: Correlation IDs, standardized error handling, request validation
+- **Credential Protection**: Secure environment variable management
+- **CORS Protection**: Configurable origin allowlists
+
+### 🧪 Quality Assurance
+- **65%+ Test Coverage**: Comprehensive test suite with Vitest + React Testing Library
+- **Type Safety**: Full TypeScript with strict mode and Zod validation
+- **Error Boundaries**: Graceful error handling with user-friendly fallbacks
+- **Performance Monitoring**: Request tracking and optimization
+
+### 🎨 Modern Architecture
+- **Clean UI**: React 18 + Tailwind CSS + shadcn/ui components
+- **Serverless**: Vercel edge functions for global scalability
+- **Responsive Design**: Mobile-first with accessibility standards
+- **Developer Experience**: Hot reload, TypeScript IntelliSense, comprehensive tooling
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ and npm/yarn/pnpm
-- OpenAI API key
+- Node.js 22+ (check with `node --version`)
+- npm/yarn/pnpm package manager
+- OpenAI API key with GPT-4o access
+- Git for version control
 
 ### Installation
 
@@ -157,32 +181,49 @@ prompt2story/
 
 ```bash
 # Development
-npm run dev              # Start Vercel dev server
-npm run build           # Build for production
-npm run preview         # Preview production build
+npm run dev              # Start Vercel dev server with hot reload
+npm run build           # Build for production (frontend + API)
 
-# Testing
-npm run test            # Run all tests
+# Testing & Quality
+npm run test            # Run API tests (Vitest)
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Generate coverage report
+npm run test:all        # Run comprehensive test suite (API + Frontend)
 npm run typecheck       # TypeScript type checking
+npm run lint            # ESLint code analysis
+npm run format          # Prettier code formatting
+npm run check-coverage  # Validate coverage thresholds
 
-# Code Quality
-npm run lint            # Lint code
-npm run format          # Format code
-npm run check-cruft     # Check for legacy backend artifacts
+# Utilities
+npm run check-cruft     # Check for legacy artifacts
 ```
 
-### Testing
+### Testing Strategy
+
+Our comprehensive test suite ensures production reliability:
 
 ```bash
-# Frontend tests
-cd frontend && npm test
+# Run full test suite with coverage
+npm run test:all
 
-# Type checking
-npm run typecheck
+# API testing (Vitest)
+npm run test            # Unit + integration tests
+npm run test:coverage   # With coverage report
 
-# Check for cruft
-npm run check-cruft
+# Frontend testing (React Testing Library)
+cd frontend && npm run test:run
+
+# Quality checks
+npm run typecheck       # TypeScript validation
+npm run lint           # Code quality analysis
+npm run check-coverage  # Validate 65%+ coverage threshold
 ```
+
+**Test Coverage Standards:**
+- API routes: Unit + integration testing with OpenAI mocking
+- React components: User interaction + accessibility testing
+- Rate limiting: Edge cases + security validation
+- Error handling: Comprehensive error boundary testing
 
 ## Deployment
 
@@ -210,13 +251,22 @@ npx vercel --prod
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `OPENAI_API_KEY` | OpenAI API key (required) | - |
-| `TEXT_MODEL` | Model for text generation | `gpt-4o` |
-| `JSON_MODEL` | Model for JSON responses | `gpt-4o-mini` |
-| `ALLOWED_ORIGINS` | CORS allowed origins | `https://prompt2story.com` |
-| `NODE_ENV` | Environment mode | `development` |
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `OPENAI_API_KEY` | OpenAI API key with GPT-4o access | ✅ | - |
+| `TEXT_MODEL` | Model for text generation | ❌ | `gpt-4o` |
+| `JSON_MODEL` | Model for JSON responses | ❌ | `gpt-4o-mini` |
+| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | ❌ | `https://prompt2story.com` |
+| `NODE_ENV` | Environment mode | ❌ | `development` |
+
+### Security Configuration
+
+The application includes enterprise-grade security features:
+
+- **Rate Limiting**: Tiered by endpoint type (health: 60/min, generation: 10/min, upload: 5/min)
+- **Request Validation**: Zod schema validation for all API inputs
+- **Error Handling**: Correlation IDs for request tracking and debugging
+- **CORS Protection**: Configurable origin allowlists for production security
 
 ### Customization
 

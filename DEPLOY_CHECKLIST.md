@@ -71,7 +71,7 @@ git push
 ### 🔧 **Post-Deployment Tasks**
 1. **Tomorrow: Rotate OpenAI API key**
    - Go to https://platform.openai.com/api-keys
-   - Revoke: `sk-proj-HN7TcC...` (starts with these chars)
+   - Revoke the exposed API key (check security incident report for details)
    - Generate new key
    - Update in Vercel environment variables
 

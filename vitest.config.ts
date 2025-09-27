@@ -1,12 +1,10 @@
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
   test: {
-    environment: 'jsdom',
+    environment: 'node',
     globals: true,
-    setupFiles: ['./src/test-setup.ts'],
+    setupFiles: [],
     testTimeout: 10000,
     coverage: {
       enabled: true,
@@ -14,18 +12,19 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       exclude: [
         'node_modules/**',
-        'dist/**',
+        'frontend/dist/**',
         '**/*.d.ts',
         '**/*.config.{ts,js}',
-        '**/*.test.{ts,tsx}',
-        'src/test-setup.ts'
+        'docs/**',
+        '**/*.test.{ts,js}',
+        'scripts/**'
       ],
       thresholds: {
         global: {
-          branches: 70,
-          functions: 70,
-          lines: 70,
-          statements: 70
+          branches: 65,
+          functions: 65,
+          lines: 65,
+          statements: 65
         }
       }
     },

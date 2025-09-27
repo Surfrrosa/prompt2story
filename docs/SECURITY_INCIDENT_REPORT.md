@@ -13,7 +13,7 @@ During implementation of API rate limiting infrastructure, a critical security v
 ### Vulnerability
 - **Type**: Exposed API Credentials in Public Repository
 - **Location**: `/Users/surfrrosa/prompt2story/.env` line 1
-- **Exposed Secret**: OpenAI API Key (`sk-proj-HN7TcC...`)
+- **Exposed Secret**: OpenAI API Key (redacted for security)
 - **Additional Exposure**: `test-openai.ts` was logging first 10 characters of API key in error responses
 
 ### Root Causes
@@ -71,7 +71,7 @@ All endpoints now include:
 ### ⚠️ User Action Required
 1. **Revoke and rotate the exposed OpenAI API key** immediately:
    - Log into OpenAI Platform (https://platform.openai.com/api-keys)
-   - Revoke key: `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`
+   - Revoke key: `sk-proj-HN7TcC...` (exposed key redacted for security)
    - Generate new API key
    - Update production environment variables (Vercel dashboard)
 
