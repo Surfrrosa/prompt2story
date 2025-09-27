@@ -21,6 +21,11 @@ interface RateLimitResult {
 // In-memory store (will be replaced with Redis/KV in production)
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
 
+// Export function to clear state (for testing)
+export function clearRateLimitState(): void {
+  requestCounts.clear();
+}
+
 // Cleanup expired entries every 5 minutes
 setInterval(() => {
   const now = Date.now();

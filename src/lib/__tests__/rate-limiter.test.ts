@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { rateLimit, rateLimiters } from '../rate-limiter.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { rateLimit, rateLimiters, clearRateLimitState } from '../rate-limiter.js';
 
 // Mock VercelRequest
 const createMockRequest = (ip: string = '127.0.0.1') => ({
@@ -13,6 +13,7 @@ describe('Rate Limiting Infrastructure', () => {
     // Clear rate limiting cache between tests
     vi.clearAllTimers();
     vi.useFakeTimers();
+    clearRateLimitState();
   });
 
   afterEach(() => {

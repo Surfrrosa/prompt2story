@@ -1,0 +1,170 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [ main, fix/vision-json-mode ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security scans weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+jobs:
+  dependency-audit:
+    name: Dependency Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd frontend && npm ci
+
+      - name: Run npm audit (Root)
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run npm audit (Frontend)
+        run: cd frontend && npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Generate SBOM (Root)
+        run: npm sbom --sbom-format=cyclonedx > sbom-root.json
+
+      - name: Generate SBOM (Frontend)
+        run: cd frontend && npm sbom --sbom-format=cyclonedx > ../sbom-frontend.json
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-sbom
+          path: |
+            sbom-root.json
+            sbom-frontend.json
+          retention-days: 30
+
+  codeql-analysis:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript' ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd frontend && npm ci
+
+      - name: Build project
+        run: |
+          npm run build
+          cd frontend && npm run build
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+
+  secrets-scan:
+    name: Secrets Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for secret scanning
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  security-headers:
+    name: Security Headers Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for security headers in Vercel config
+        run: |
+          if [ -f "vercel.json" ]; then
+            echo "✅ vercel.json found"
+            # Check for security headers
+            if grep -q "X-Content-Type-Options\|X-Frame-Options\|Referrer-Policy" vercel.json; then
+              echo "✅ Security headers found in vercel.json"
+            else
+              echo "❌ Missing security headers in vercel.json"
+              echo "Required headers: X-Content-Type-Options, X-Frame-Options, Referrer-Policy"
+              exit 1
+            fi
+          else
+            echo "⚠️ vercel.json not found - security headers should be configured"
+            exit 1
+          fi
+
+  env-security:
+    name: Environment Security Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check .env.example exists
+        run: |
+          if [ -f ".env.example" ]; then
+            echo "✅ .env.example found"
+          else
+            echo "❌ .env.example missing - required for security documentation"
+            exit 1
+          fi
+
+      - name: Verify no secrets in .env.example
+        run: |
+          if grep -E "(sk-|key_|secret_|token_|password)" .env.example | grep -v "your-" | grep -v "example" | grep -v "REDACTED"; then
+            echo "❌ Potential secrets found in .env.example"
+            exit 1
+          else
+            echo "✅ No secrets detected in .env.example"
+          fi
+
+      - name: Check for environment variable documentation
+        run: |
+          if grep -q "OPENAI_API_KEY" README.md docs/DEPLOYMENT.md; then
+            echo "✅ Environment variables documented"
+          else
+            echo "❌ Environment variables not properly documented"
+            exit 1
+          fi
