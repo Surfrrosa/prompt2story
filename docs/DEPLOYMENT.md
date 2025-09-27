@@ -96,7 +96,7 @@ for i in {1..35}; do curl https://your-domain.com/api/healthz; done
 
 | Variable | Value | Notes |
 |----------|-------|-------|
-| `OPENAI_API_KEY` | `sk-...` | OpenAI API key with GPT-4o access |
+| `OPENAI_API_KEY` | `[REDACTED]` | OpenAI API key with GPT-4o access |
 | `TEXT_MODEL` | `gpt-4o` | Model for text generation |
 | `JSON_MODEL` | `gpt-4o-mini` | Model for structured responses |
 | `ALLOWED_ORIGINS` | `https://yourdomain.com,https://www.yourdomain.com` | Comma-separated CORS origins |
@@ -106,7 +106,7 @@ for i in {1..35}; do curl https://your-domain.com/api/healthz; done
 
 | Variable | Value | Notes |
 |----------|-------|-------|
-| `OPENAI_API_KEY` | `sk-staging-...` | Separate API key for staging |
+| `OPENAI_API_KEY` | `[REDACTED]` | Separate API key for staging |
 | `TEXT_MODEL` | `gpt-4o-mini` | Cost optimization for staging |
 | `JSON_MODEL` | `gpt-4o-mini` | Cost optimization for staging |
 | `ALLOWED_ORIGINS` | `https://staging.yourdomain.com` | Staging domain only |
@@ -116,7 +116,7 @@ for i in {1..35}; do curl https://your-domain.com/api/healthz; done
 
 | Variable | Value | Notes |
 |----------|-------|-------|
-| `OPENAI_API_KEY` | `sk-dev-...` | Development API key |
+| `OPENAI_API_KEY` | `[REDACTED]` | Development API key |
 | `TEXT_MODEL` | `gpt-4o-mini` | Cost optimization for development |
 | `JSON_MODEL` | `gpt-4o-mini` | Cost optimization for development |
 | `ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Local development origins |

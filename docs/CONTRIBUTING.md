@@ -81,7 +81,7 @@ cp .env.example .env
 Create a `.env` file with development settings:
 
 ```env
-OPENAI_API_KEY=sk-dev-your-development-key-here
+OPENAI_API_KEY=your-development-key-here
 TEXT_MODEL=gpt-4o-mini  # Cost optimization for development
 JSON_MODEL=gpt-4o-mini  # Cost optimization for development
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
