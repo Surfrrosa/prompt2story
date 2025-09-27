@@ -39,7 +39,7 @@ export function isOriginAllowed(origin: string | null): boolean {
 export function getCorsHeaders(origin: string | null): Record<string, string> {
   const headers: Record<string, string> = {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Correlation-ID',
     'Vary': 'Origin',
   };
   if (isOriginAllowed(origin)) {
@@ -47,6 +47,14 @@ export function getCorsHeaders(origin: string | null): Record<string, string> {
     headers['Access-Control-Allow-Credentials'] = 'true';
   }
   return headers;
+}
+
+// Helper to apply CORS headers to response
+export function applyCorsHeaders(res: any, origin: string | null): void {
+  const headers = getCorsHeaders(origin);
+  Object.entries(headers).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
 }
 
 export function setCorsHeaders(res: VercelResponse, origin: string | null): void {

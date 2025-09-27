@@ -1,62 +1,65 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { setCorsHeaders, getEnv } from './_env.js';
+import { rateLimiters } from '../src/lib/rate-limiter.js';
+import { ApiResponse, ApiError, ApiErrorCode, logRequest, logError } from '../src/lib/api-response.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const apiResponse = new ApiResponse(req, res);
   const origin = (req.headers.origin as string) ?? null;
+
   setCorsHeaders(res, origin);
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ detail: 'Method not allowed' });
+
+  if (req.method !== 'POST') {
+    return apiResponse.error(new ApiError(
+      ApiErrorCode.METHOD_NOT_ALLOWED,
+      'Only POST method is allowed'
+    ));
+  }
 
   try {
+    // Apply rate limiting for test endpoints
+    const rateLimitResult = rateLimiters.standard(req);
+
+    Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+
+    if (!rateLimitResult.allowed) {
+      return apiResponse.rateLimited(rateLimitResult.resetTime, Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000));
+    }
+
+    logRequest(req, apiResponse['correlationId'], { endpoint: 'test-openai' });
+
     const env = getEnv();
 
-    // Test 1: Check if we have API key
+    // Test 1: Check if we have API key - NEVER expose actual key values
     if (!env.OPENAI_API_KEY || env.OPENAI_API_KEY === 'dummy-key-for-smoke-test') {
-      return res.status(200).json({
-        test: 'api_key_check',
-        result: 'FAIL - No valid API key found',
-        key_starts_with: env.OPENAI_API_KEY?.substring(0, 10) + '...'
-      });
+      return apiResponse.error(new ApiError(
+        ApiErrorCode.CONFIGURATION_ERROR,
+        'OPENAI_API_KEY environment variable is required'
+      ));
     }
 
-    // Test 2: Try to import OpenAI
-    let OpenAI;
+    // Test 2: Try to import and use OpenAI
     try {
       const openaiModule = await import('openai');
-      OpenAI = openaiModule.OpenAI;
+      const OpenAI = openaiModule.OpenAI;
 
       if (!OpenAI) {
-        return res.status(200).json({
-          test: 'openai_import',
-          result: 'FAIL - OpenAI class not found in module',
-          module_keys: Object.keys(openaiModule)
-        });
+        return apiResponse.error(new ApiError(
+          ApiErrorCode.INTERNAL_ERROR,
+          'OpenAI class not found in module'
+        ));
       }
-    } catch (importError) {
-      return res.status(200).json({
-        test: 'openai_import',
-        result: 'FAIL - Import error',
-        error: importError instanceof Error ? importError.message : String(importError)
-      });
-    }
 
-    // Test 3: Try to create OpenAI instance
-    let openai;
-    try {
-      openai = new OpenAI({
+      // Test 3: Try to create OpenAI instance and make test call
+      const openai = new OpenAI({
         apiKey: env.OPENAI_API_KEY,
       });
-    } catch (constructorError) {
-      return res.status(200).json({
-        test: 'openai_constructor',
-        result: 'FAIL - Constructor error',
-        error: constructorError instanceof Error ? constructorError.message : String(constructorError)
-      });
-    }
 
-    // Test 4: Try a simple text completion (not vision)
-    try {
+      // Test 4: Try a simple text completion
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
@@ -68,26 +71,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         max_tokens: 10
       });
 
-      return res.status(200).json({
-        test: 'openai_text_api',
+      return apiResponse.success({
+        test: 'openai_api_connection',
         result: 'SUCCESS',
-        response: response.choices[0]?.message?.content
+        model_used: response.model,
+        response_preview: response.choices[0]?.message?.content?.substring(0, 50)
       });
 
-    } catch (apiError) {
-      return res.status(200).json({
-        test: 'openai_text_api',
-        result: 'FAIL - API call error',
-        error: apiError instanceof Error ? apiError.message : String(apiError)
-      });
+    } catch (openaiError) {
+      logError(
+        openaiError instanceof Error ? openaiError : new Error('OpenAI API test failed'),
+        apiResponse['correlationId'],
+        { test: 'openai_api_connection' }
+      );
+      return apiResponse.error(new ApiError(
+        ApiErrorCode.LLM_ERROR,
+        'OpenAI API test failed'
+      ));
     }
 
   } catch (error) {
-    return res.status(500).json({
-      test: 'general_error',
-      result: 'FAIL - Unexpected error',
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    });
+    logError(
+      error instanceof Error ? error : new Error('Unknown error in test-openai'),
+      apiResponse['correlationId'],
+      { endpoint: 'test-openai' }
+    );
+    return apiResponse.error(error instanceof Error ? error : new Error('Unknown error occurred'));
   }
 }

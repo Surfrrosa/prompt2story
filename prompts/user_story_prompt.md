@@ -11,7 +11,7 @@ Your primary goal is to identify and extract EVERY separate issue, bug, feature,
 3. **Separate each distinct concern** - Even if mentioned briefly or in passing, each issue gets its own user story
 4. **Convert ALL problems to user stories** - Bugs, QA gaps, missing features, broken behaviors all become structured user stories
 5. **Ensure 1:1 mapping** - One user story per distinct issue, no exceptions
-6. **Create 3-5 detailed acceptance criteria per story** - Use proper Gherkin format (Given/When/Then) covering normal flow, edge cases, error scenarios, and different states
+6. **Create 5-8 detailed acceptance criteria per story minimum** - Use proper Gherkin format (Given/When/Then) covering normal flow, edge cases, error scenarios, validation, loading states, mobile responsiveness, and different user states
 7. **Add optional metadata when confident** - Include type (bug/feature), component, priority, effort, persona when clearly indicated
 
 ## Enhanced Multi-Story Parsing Guidelines:
@@ -78,7 +78,7 @@ Return a JSON object with the following structure:
 - **Be precise about context** - "French localization missing in pricing table" not just "localization issue"
 - **Include error scenarios** - Network failures, validation errors, permission denials, etc.
 - **Consider user impact** - How does each issue affect the user experience?
-- **Generate 3-5 acceptance criteria minimum** - Cover normal flow, error scenarios, edge cases, different states, and boundary conditions
+- **Generate 5-8 acceptance criteria minimum per story** - Cover normal flow, error scenarios, edge cases, validation, loading states, mobile responsiveness, accessibility, different user states, and boundary conditions
 - **Use proper Gherkin format** - Every criterion must follow "Given [context], when [action], then [outcome]" structure
 - **Make testable criteria** - QA should be able to verify each acceptance criterion
 - **Scan all visible components** - For UI analysis, examine every interactive element, form field, button, and navigation item
@@ -88,7 +88,7 @@ Return a JSON object with the following structure:
 Before returning your response, verify:
 1. Did I extract every distinct issue mentioned?
 2. Are bugs and QA gaps treated as full user stories?
-3. Does each story have at least 3-5 detailed acceptance criteria in proper Gherkin format?
+3. Does each story have at least 5-8 detailed acceptance criteria in proper Gherkin format?
 4. Do acceptance criteria cover normal flow, error scenarios, edge cases, different states, and boundary conditions?
 5. Did I scan all visible UI components and interface elements thoroughly?
 6. Is each story focused on exactly one problem or enhancement?

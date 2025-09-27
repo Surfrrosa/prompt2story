@@ -267,7 +267,10 @@ function App() {
   }
 
   const handleRegenerateStory = async (storyIndex: number) => {
-    if (!result || !inputText.trim()) return
+    if (!result) return
+
+    // Get original input - either text input or indicate design upload
+    const originalInput = inputText.trim() || (uploadedFile ? `Design file: ${uploadedFile.name}` : 'User input')
 
     const newRegeneratingStates = new Set(regeneratingStates)
     newRegeneratingStates.add(storyIndex)
@@ -275,16 +278,23 @@ function App() {
 
     try {
       const currentStory = result.user_stories[storyIndex]
-      
-      const regeneratedStory = await postJson('/api/regenerate-story', {
-        original_input: inputText,
+
+      const response = await postJson('/api/regenerate-story', {
+        original_input: originalInput,
         current_story: currentStory,
+        feedback: feedbackStates.get(storyIndex)?.text || '',
         include_metadata: includeMetadata
       })
-      
+
+      // Extract the regenerated story from the response
+      const regeneratedStory = response.regenerated_story || response
+      console.log('Regenerated story:', regeneratedStory)
+      console.log('Story index:', storyIndex)
+
       const updatedResult = { ...result }
       updatedResult.user_stories = [...result.user_stories]
       updatedResult.user_stories[storyIndex] = regeneratedStory
+      console.log('Updated result:', updatedResult)
       setResult(updatedResult)
 
       const newFeedbackStates = new Map(feedbackStates)
@@ -314,7 +324,10 @@ function App() {
     
     setEmailSignupSuccess(true)
     setEmail('')
-    
+
+    // Store email submission to prevent future popups
+    localStorage.setItem('emailSubmitted', 'true')
+
     setTimeout(() => {
       setEmailSignupSuccess(false)
       setEmailSignupDismissed(true)
@@ -329,12 +342,19 @@ function App() {
 
   useEffect(() => {
     const dismissed = localStorage.getItem('emailSignupDismissed')
-    if (dismissed === 'true') {
+    const emailSubmitted = localStorage.getItem('emailSubmitted')
+    if (dismissed === 'true' || emailSubmitted === 'true') {
       setEmailSignupDismissed(true)
     }
   }, [])
 
   const handleExportWithModal = (exportAction: () => void) => {
+    // Check if user has already dismissed or submitted email
+    if (emailSignupDismissed || localStorage.getItem('emailSubmitted') === 'true' || localStorage.getItem('emailSignupDismissed') === 'true') {
+      exportAction()
+      return
+    }
+
     setPendingExportAction(() => exportAction)
     setShowExportModal(true)
   }
@@ -356,9 +376,11 @@ function App() {
     if (pendingExportAction) {
       pendingExportAction()
     }
-    
+
     setShowExportModal(false)
     setPendingExportAction(null)
+    setEmailSignupDismissed(true)
+    localStorage.setItem('emailSignupDismissed', 'true')
   }
 
   const handleModalDismiss = () => {
@@ -1003,7 +1025,12 @@ function App() {
                             <ThumbsDown className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleRegenerateStory(index)}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              handleRegenerateStory(index)
+                            }}
                             disabled={regeneratingStates.has(index)}
                             title="Regenerate story"
                             className="px-3 py-2 rounded-lg text-sm transition-colors duration-150 ease-in-out text-soft-gray hover:text-vivid-purple hover:bg-charcoal-light disabled:opacity-50 disabled:cursor-not-allowed"

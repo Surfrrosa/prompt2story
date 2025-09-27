@@ -4,6 +4,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { setCorsHeaders, getEnv } from './_env.js';
 import { GenerateUserStoriesSchema, UserStoriesResponseSchema, safeParseApiResponse } from '../src/lib/schemas.js';
+import { rateLimiters } from '../src/lib/rate-limiter.js';
+import { ApiResponse, ApiError, ApiErrorCode, logRequest, logError } from '../src/lib/api-response.js';
 
 interface Metadata {
   priority: string;
@@ -38,7 +40,10 @@ interface TextInput {
 function validateEnvironment(): void {
   const { OPENAI_API_KEY } = getEnv();
   if (!OPENAI_API_KEY) {
-    throw new Error('Missing required environment variable: OPENAI_API_KEY');
+    throw new ApiError(
+      ApiErrorCode.CONFIGURATION_ERROR,
+      'Missing required environment variable: OPENAI_API_KEY'
+    );
   }
 }
 
@@ -173,13 +178,36 @@ Return ONLY a valid JSON object matching exactly this schema—no preamble, no m
 }`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const apiResponse = new ApiResponse(req, res);
   const origin = (req.headers.origin as string) ?? null;
+
   setCorsHeaders(res, origin);
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ detail: 'Method not allowed' });
+
+  if (req.method !== 'POST') {
+    return apiResponse.error(new ApiError(
+      ApiErrorCode.METHOD_NOT_ALLOWED,
+      'Only POST method is allowed'
+    ));
+  }
 
   try {
+    // Apply rate limiting
+    const rateLimitResult = rateLimiters.generation(req);
+
+    // Set rate limit headers
+    Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+
+    if (!rateLimitResult.allowed) {
+      return apiResponse.rateLimited(rateLimitResult.resetTime, Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000));
+    }
+
+    // Log request
+    logRequest(req, apiResponse['correlationId'], { endpoint: 'generate-user-stories' });
+
     // Validate environment
     validateEnvironment();
     const env = getEnv();
@@ -193,7 +221,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     if (!inputValidation.success) {
-      return res.status(400).json({
+      return apiResponse.validationError({
         detail: `Input validation failed: ${(inputValidation as any).error || 'Unknown validation error'}`
       });
     }
@@ -246,29 +274,39 @@ requirements. Be thorough and complete.`;
         { role: 'user', content: fullPrompt }
       ],
       env.JSON_MODEL || 'gpt-4o-mini', // Optimized model for JSON responses
-      env.TEXT_MODEL || 'gpt-4o',      // Fallback model for complex responses  
+      env.TEXT_MODEL || 'gpt-4o',      // Fallback model for complex responses
       0.2            // Low temperature for consistent output
     );
 
     // Parse and validate response
     try {
       const result = extractJsonFromContent(content);
-      
+
       // Validate response schema
       const responseValidation = safeParseApiResponse(UserStoriesResponseSchema, result);
-      
+
       if (responseValidation.success) {
-        return res.status(200).json(responseValidation.data);
+        return apiResponse.success(responseValidation.data);
       } else {
-        console.warn('Response validation failed:', responseValidation.success ? 'Unknown error' : (responseValidation as any).error);
+        logError(
+          new ApiError(ApiErrorCode.LLM_ERROR, 'Response validation failed'),
+          apiResponse['correlationId'],
+          { validationError: responseValidation.success ? 'Unknown error' : (responseValidation as any).error }
+        );
         // Still return the data but with warning logged
         const fallbackResponse: GenerationResponse = {
           user_stories: result.user_stories || [],
           edge_cases: result.edge_cases || []
         };
-        return res.status(200).json(fallbackResponse);
+        return apiResponse.success(fallbackResponse);
       }
     } catch (parseError) {
+      logError(
+        new ApiError(ApiErrorCode.LLM_ERROR, 'Failed to parse LLM response'),
+        apiResponse['correlationId'],
+        { parseError: parseError instanceof Error ? parseError.message : 'Unknown parse error' }
+      );
+
       // Fallback response if parsing fails
       const excerpt = content.length > 200 ? content.substring(0, 200) + '...' : content;
       const fallbackResponse: GenerationResponse = {
@@ -280,13 +318,15 @@ requirements. Be thorough and complete.`;
         edge_cases: ['Please review the generated content for edge cases']
       };
 
-      return res.status(200).json(fallbackResponse);
+      return apiResponse.success(fallbackResponse);
     }
 
   } catch (error) {
-    console.error('Error in generate-user-stories:', error);
-    return res.status(500).json({ 
-      detail: 'Internal server error. Check server logs for details.' 
-    });
+    logError(
+      error instanceof Error ? error : new Error('Unknown error in generate-user-stories'),
+      apiResponse['correlationId'],
+      { endpoint: 'generate-user-stories' }
+    );
+    return apiResponse.error(error instanceof Error ? error : new Error('Unknown error occurred'));
   }
 }

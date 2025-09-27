@@ -1,13 +1,21 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { setCorsHeaders } from './_env.js';
+import { setCorsHeaders, getEnv } from './_env.js';
+import { rateLimiters } from '../src/lib/rate-limiter.js';
+import { ApiResponse, ApiError, ApiErrorCode, logRequest, logError } from '../src/lib/api-response.js';
 import formidable from 'formidable';
 import fs from 'node:fs';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-function json(res: VercelResponse, code: number, data: any) {
-  res.status(code).setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify(data));
+// Environment validation
+function validateEnvironment(): void {
+  const { OPENAI_API_KEY } = getEnv();
+  if (!OPENAI_API_KEY || OPENAI_API_KEY === 'dummy-key-for-smoke-test') {
+    throw new ApiError(
+      ApiErrorCode.CONFIGURATION_ERROR,
+      'OPENAI_API_KEY not configured properly'
+    );
+  }
 }
 
 async function parseFileUpload(req: VercelRequest): Promise<{ file: any; prompt: string }> {
@@ -56,17 +64,39 @@ async function fileToBase64(filePath: string, originalName: string): Promise<str
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const apiResponse = new ApiResponse(req, res);
   const origin = (req.headers.origin as string) ?? null;
+
   setCorsHeaders(res, origin);
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return json(res, 405, { detail: 'Method not allowed' });
+
+  if (req.method !== 'POST') {
+    return apiResponse.error(new ApiError(
+      ApiErrorCode.METHOD_NOT_ALLOWED,
+      'Only POST method is allowed'
+    ));
+  }
 
   try {
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-    if (!OPENAI_API_KEY || OPENAI_API_KEY === 'dummy-key-for-smoke-test') {
-      return json(res, 400, { error_type: 'missing_api_key', detail: 'OPENAI_API_KEY not configured.' });
+    // Apply rate limiting for upload endpoints
+    const rateLimitResult = rateLimiters.upload(req);
+
+    // Set rate limit headers
+    Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+
+    if (!rateLimitResult.allowed) {
+      return apiResponse.rateLimited(rateLimitResult.resetTime, Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000));
     }
+
+    // Log request
+    logRequest(req, apiResponse['correlationId'], { endpoint: 'analyze-design' });
+
+    // Validate environment
+    validateEnvironment();
+    const env = getEnv();
 
     let base64Image: string;
     let prompt: string = '';
@@ -86,14 +116,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { image, prompt: jsonPrompt } = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
 
       if (!image || typeof image !== 'string') {
-        return json(res, 400, { error_type: 'invalid_image', detail: 'Provide image file upload or JSON with base64/URL' });
+        return apiResponse.error(new ApiError(
+          ApiErrorCode.BAD_REQUEST,
+          'Provide image file upload or JSON with base64/URL'
+        ));
       }
 
       // Support base64 data URLs (existing functionality)
       if (image.startsWith('data:')) {
         base64Image = image;
       } else {
-        return json(res, 400, { error_type: 'invalid_image', detail: 'JSON mode only supports base64 data URLs' });
+        return apiResponse.error(new ApiError(
+          ApiErrorCode.BAD_REQUEST,
+          'JSON mode only supports base64 data URLs'
+        ));
       }
 
       prompt = jsonPrompt || '';
@@ -104,15 +140,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const userPrompt = [
       prompt ? `Context: ${prompt}` : '',
-      'Analyze this image and generate user stories about the visible content.',
+      'Analyze this image thoroughly and generate COMPREHENSIVE user stories covering ALL visible elements.',
+      '',
+      'REQUIREMENTS:',
+      '- Generate 5-12 user stories covering every UI component, interaction, and workflow visible',
+      '- Each story must have 5-8 detailed acceptance criteria minimum',
+      '- Cover normal flows, error scenarios, edge cases, validation, loading states, responsive behavior',
+      '- Include stories for: form validation, navigation, data display, user interactions, accessibility, mobile responsiveness',
+      '- Examine every button, form field, menu item, card, modal, dropdown, and interactive element',
+      '- Consider different user roles, permissions, and states',
+      '',
       'Return valid JSON with this exact structure:',
-      '{"user_stories":[{"title":"...","story":"As a ...","acceptance_criteria":["Given/When/Then statements"]}],"edge_cases":["potential issues"]}'
+      '{"user_stories":[{"title":"Specific actionable title","story":"As a [specific user], I want [detailed goal] so that [clear benefit]","acceptance_criteria":["Given [specific context], when [detailed action], then [precise outcome]","Given [error scenario], when [action], then [error handling]","Given [edge case], when [action], then [expected behavior]","Given [validation scenario], when [input], then [validation response]","Given [loading state], when [action], then [loading behavior]","..."]}],"edge_cases":["comprehensive edge cases covering all scenarios"]}'
     ].join('\\n');
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -135,23 +180,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text().catch(() => '');
-      return json(res, 502, { error_type: 'openai_error', detail: errorText || `OpenAI ${openaiResponse.status}` });
+      logError(
+        new ApiError(ApiErrorCode.LLM_ERROR, `OpenAI API error: ${openaiResponse.status}`),
+        apiResponse['correlationId'],
+        { openaiError: errorText }
+      );
+      return apiResponse.error(new ApiError(
+        ApiErrorCode.LLM_ERROR,
+        `OpenAI API error: ${openaiResponse.status}`
+      ));
     }
 
     const data = await openaiResponse.json() as any;
     const content = data.choices?.[0]?.message?.content ?? '';
 
     if (!content) {
-      return json(res, 502, { error_type: 'openai_empty', detail: 'No content returned from OpenAI' });
+      return apiResponse.error(new ApiError(
+        ApiErrorCode.LLM_ERROR,
+        'No content returned from OpenAI'
+      ));
     }
 
     // Parse JSON response
     try {
       const parsed = JSON.parse(content);
-      return json(res, 200, parsed);
+      return apiResponse.success(parsed);
     } catch (parseError) {
+      logError(
+        new ApiError(ApiErrorCode.LLM_ERROR, 'Failed to parse vision analysis response'),
+        apiResponse['correlationId'],
+        { parseError: parseError instanceof Error ? parseError.message : 'Unknown parse error' }
+      );
+
       // Fallback with actual content analysis
-      return json(res, 200, {
+      const fallbackResponse = {
         user_stories: [{
           title: 'Vision Analysis (parsing failed)',
           story: String(content).slice(0, 300).replace(/\\s+/g, ' '),
@@ -161,14 +223,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ]
         }],
         edge_cases: ['JSON parsing failed - returned raw analysis']
-      });
+      };
+      return apiResponse.success(fallbackResponse);
     }
 
   } catch (error) {
-    console.error('Vision handler error:', error);
-    return json(res, 500, {
-      error_type: 'handler_error',
-      detail: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logError(
+      error instanceof Error ? error : new Error('Unknown error in analyze-design'),
+      apiResponse['correlationId'],
+      { endpoint: 'analyze-design' }
+    );
+    return apiResponse.error(error instanceof Error ? error : new Error('Unknown error occurred'));
   }
 }
