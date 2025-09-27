@@ -99,7 +99,7 @@ function extractJsonFromContent(content: string): any {
     const fencedMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
     if (fencedMatch) {
       try {
-        return JSON.parse(fencedMatch[1]);
+        return JSON.parse(fencedMatch[1] || '{}');
       } catch (e) {
         // Continue to next attempt
       }

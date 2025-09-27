@@ -29,8 +29,8 @@ vi.mock('openai', () => {
 });
 
 // Import handlers after mocking
-const healthzHandler = await import('../../api/healthz');
-const generateHandler = await import('../../api/generate-user-stories');
+const healthzHandler = await import('../../../api/healthz.js');
+const generateHandler = await import('../../../api/generate-user-stories.js');
 
 describe('API Integration Tests', () => {
   beforeEach(() => {

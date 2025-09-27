@@ -45,7 +45,7 @@ function getClientKey(req: VercelRequest): string {
   let ip = req.connection?.remoteAddress || req.socket?.remoteAddress || 'unknown';
 
   if (typeof forwarded === 'string') {
-    ip = forwarded.split(',')[0].trim();
+    ip = forwarded.split(',')[0]?.trim() || ip;
   } else if (typeof realIp === 'string') {
     ip = realIp;
   } else if (typeof cfConnectingIp === 'string') {
