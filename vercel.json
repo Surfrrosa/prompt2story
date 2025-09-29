@@ -4,10 +4,13 @@
   "outputDirectory": "frontend/dist",
   "functions": {
     "api/generate-user-stories.ts": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "api/analyze-design.ts": {
-      "maxDuration": 30
+      "maxDuration": 60
+    },
+    "api/regenerate-story.ts": {
+      "maxDuration": 60
     }
   },
   "headers": [
