@@ -5,7 +5,7 @@ import { ApiResponse, ApiError, ApiErrorCode, logRequest, logError } from '../sr
 import formidable from 'formidable';
 import fs from 'node:fs';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 
 // Environment validation
 function validateEnvironment(): void {
