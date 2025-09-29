@@ -7,6 +7,7 @@ import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import { getHealth, generateUserStories, postJson } from '@/lib/api'
+import { TypeAnimation } from 'react-type-animation'
 
 interface Metadata {
   priority: 'Low' | 'Medium' | 'High'
@@ -551,7 +552,17 @@ function App() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2 text-pure-white" aria-label="AI User Story Generator">
-            AI User Story Generator
+            <TypeAnimation
+              sequence={[
+                'AI User Story Generator', 3000,
+                'Built for Agile Teams', 3500,
+                'Turn Chaos Into Clarity', 4000,
+              ]}
+              wrapper="span"
+              speed={25}
+              repeat={0}
+              cursor={true}
+            />
           </h1>
           <p className="text-soft-gray">Transform meeting notes and requirements into structured user stories with AI. The perfect product manager tool for agile teams.</p>
         </div>
