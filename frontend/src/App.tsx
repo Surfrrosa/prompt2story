@@ -785,7 +785,7 @@ function App() {
                                 <FileText className="w-4 h-4 text-soft-gray" />
                                 <span className="text-xs text-soft-gray">PDF</span>
                               </div>
-                              <span className="text-xs text-soft-gray">• Max 10MB</span>
+                              <span className="text-xs text-soft-gray">• Max 25MB</span>
                             </div>
                           </div>
                         </div>
