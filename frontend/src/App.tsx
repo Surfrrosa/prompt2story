@@ -760,7 +760,7 @@ function App() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-soft-gray mb-2">
-                      Upload Design File (PNG, JPG, PDF)
+                      Upload File (Images or Documents)
                     </label>
                     
                     {/* Drag and Drop Zone - State Swap Implementation */}
@@ -778,7 +778,7 @@ function App() {
                       >
                         <input
                           type="file"
-                          accept=".png,.jpg,.jpeg,.pdf"
+                          accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.md"
                           onChange={handleFileUpload}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         />
@@ -794,7 +794,7 @@ function App() {
                             <p className={`text-lg font-medium transition-colors duration-300 ${
                               isDragOver ? 'text-pure-white' : 'text-soft-gray group-hover:text-pure-white'
                             }`}>
-                              {isDragOver ? 'Drop your design file here' : 'Drag & drop your design file'}
+                              {isDragOver ? 'Drop your file here' : 'Drag & drop your file'}
                             </p>
                             
                             <p className="text-sm text-soft-gray">
@@ -804,11 +804,11 @@ function App() {
                             <div className="flex items-center justify-center space-x-4 mt-4">
                               <div className="flex items-center space-x-1">
                                 <Image className="w-4 h-4 text-soft-gray" />
-                                <span className="text-xs text-soft-gray">PNG, JPG</span>
+                                <span className="text-xs text-soft-gray">PNG, JPG, WEBP, GIF</span>
                               </div>
                               <div className="flex items-center space-x-1">
                                 <FileText className="w-4 h-4 text-soft-gray" />
-                                <span className="text-xs text-soft-gray">PDF</span>
+                                <span className="text-xs text-soft-gray">PDF, TXT, MD</span>
                               </div>
                               <span className="text-xs text-soft-gray">• Max 25MB</span>
                             </div>
