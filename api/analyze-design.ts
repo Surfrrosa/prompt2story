@@ -4,8 +4,12 @@ import { rateLimiters } from '../src/lib/rate-limiter.js';
 import { ApiResponse, ApiError, ApiErrorCode, logRequest, logError } from '../src/lib/api-response.js';
 import formidable from 'formidable';
 import fs from 'node:fs';
-import pdfParse from 'pdf-parse';
+import { createRequire } from 'node:module';
 import OpenAI from 'openai';
+
+// Import CommonJS module in ESM context
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse');
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 
