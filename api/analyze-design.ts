@@ -222,6 +222,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// JSON schema instructions (same as generate-user-stories endpoint)
+const JSON_INSTRUCTIONS = `
+Return ONLY a valid JSON object matching exactly this schema—no preamble, no markdown, no code fences:
+
+{
+  "user_stories": [
+    {
+      "title": "string",
+      "story": "string",
+      "acceptance_criteria": ["string", "..."]
+    }
+  ],
+  "edge_cases": ["string", "..."]
+}`;
+
 // Handler for text-based documents (PDF, TXT, MD)
 async function handleTextGeneration(
   openai: OpenAI,
@@ -230,16 +245,16 @@ async function handleTextGeneration(
   env: ReturnType<typeof getEnv>,
   apiResponse: ApiResponse
 ) {
-  // Load prompt (same as generate-user-stories)
+  // Use same prompt structure as generate-user-stories
   const basePrompt = `You are a senior Product Owner. From the following text, identify all relevant user stories, covering both primary actions and secondary interactions. For each user story, generate at least 3–5 detailed acceptance criteria using the Gherkin format (Given / When / Then). Extract EVERY distinct issue, bug, feature, or requirement mentioned.`;
 
-  const fullPrompt = `${basePrompt}\n\n${context ? `Context: ${context}\n\n` : ''}Text to analyze:\n${text}`;
+  const fullPrompt = `${basePrompt}\n\n${JSON_INSTRUCTIONS}\n\n${context ? `Context: ${context}\n\n` : ''}Text to analyze:\n${text}`;
 
   const response = await openai.chat.completions.create({
     model: env.JSON_MODEL || 'gpt-4o-mini',
     response_format: { type: 'json_object' },
     messages: [
-      { role: 'system', content: 'You are a senior Product Owner. Output only valid JSON with snake_case keys: user_stories and edge_cases.' },
+      { role: 'system', content: 'You are a senior Product Owner and business analyst. Output only valid JSON.' },
       { role: 'user', content: fullPrompt }
     ],
     temperature: 0.2,
@@ -250,12 +265,7 @@ async function handleTextGeneration(
 
   try {
     const parsed = JSON.parse(content);
-    // Ensure correct format (snake_case)
-    const formatted = {
-      user_stories: parsed.user_stories || parsed.userStories || [],
-      edge_cases: parsed.edge_cases || parsed.edgeCases || []
-    };
-    return apiResponse.success(formatted);
+    return apiResponse.success(parsed);
   } catch (parseError) {
     // Fallback response
     const fallbackResponse = {
