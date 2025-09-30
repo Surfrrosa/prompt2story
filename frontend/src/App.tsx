@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown, Mail, X, Upload, Image } from '@/components/icons'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
-import { getHealth, generateUserStories, postJson } from '@/lib/api'
+import { getHealth, generateUserStories, generateUserStoriesStreaming, postJson } from '@/lib/api'
 import { TypeAnimation } from 'react-type-animation'
 
 interface Metadata {
@@ -35,6 +35,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<GenerationResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [streamingText, setStreamingText] = useState('')
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
   const [includeMetadata, setIncludeMetadata] = useState(true)
   const [inferEdgeCases, setInferEdgeCases] = useState(true)
@@ -83,30 +84,54 @@ function App() {
     setError(null)
     setResult(null)
     setCopySuccess(null)
+    setStreamingText('')
 
     try {
       const isBackendHealthy = await checkBackendHealth()
       if (!isBackendHealthy) {
         setError('Backend unreachable at /api/healthz. The serverless API may be starting up, please try again.')
+        setIsLoading(false)
         return
       }
 
-      const response = await generateUserStories({
+      const payload = {
         text: inputText,
         include_metadata: includeMetadata,
         infer_edge_cases: inferEdgeCases,
         include_advanced_criteria: includeAdvancedCriteria,
         expand_all_components: expandAllComponents
-      })
-      console.log('API Response:', response)
-      console.log('Include Metadata:', includeMetadata)
+      };
 
-      // Extract the actual data from the API response
-      const data = response.data
-      if (data.user_stories && data.user_stories.length > 0) {
-        console.log('First story metadata:', data.user_stories[0].metadata)
-      }
-      setResult(data)
+      // Use streaming API
+      await generateUserStoriesStreaming(
+        payload,
+        (chunk: string) => {
+          // Accumulate streaming text
+          setStreamingText(prev => prev + chunk)
+        },
+        (data: GenerationResponse) => {
+          // On complete, set the final result
+          console.log('Streaming complete, received data:', data)
+          if (data.user_stories && data.user_stories.length > 0) {
+            console.log('First story metadata:', data.user_stories[0].metadata)
+          }
+          setResult(data)
+          setStreamingText('')
+          setIsLoading(false)
+        },
+        (err: Error) => {
+          // On error
+          if (err.message.includes('fetch')) {
+            setError('Cannot connect to serverless API. Please try again in a moment.')
+          } else if (err.message.includes('OpenAI')) {
+            setError('API configuration error. Please check server logs and ensure OPENAI_API_KEY is set.')
+          } else {
+            setError(err.message || 'An unexpected error occurred')
+          }
+          setStreamingText('')
+          setIsLoading(false)
+        }
+      );
     } catch (err) {
       if (err instanceof TypeError && err.message.includes('fetch')) {
         setError('Cannot connect to serverless API. Please try again in a moment.')
@@ -115,7 +140,7 @@ function App() {
       } else {
         setError(err instanceof Error ? err.message : 'An unexpected error occurred')
       }
-    } finally {
+      setStreamingText('')
       setIsLoading(false)
     }
   }
@@ -913,6 +938,22 @@ function App() {
               <div className="flex items-center gap-2 text-red-400">
                 <AlertTriangle className="h-5 w-5" />
                 <span>{error}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {streamingText && isLoading && (
+          <Card className="bg-charcoal-lighter border-charcoal-light mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-vivid-purple">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Generating...
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-soft-gray font-mono text-sm whitespace-pre-wrap break-words max-h-96 overflow-y-auto p-4 bg-charcoal-dark rounded-lg">
+                {streamingText}
               </div>
             </CardContent>
           </Card>

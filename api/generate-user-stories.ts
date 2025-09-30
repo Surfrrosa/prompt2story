@@ -120,7 +120,64 @@ function extractJsonFromContent(content: string): any {
   }
 }
 
-// OpenAI call with JSON mode and fallback
+// OpenAI call with JSON mode and fallback (streaming version)
+async function callOpenAIJsonStream(
+  openai: OpenAI,
+  messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+  res: VercelResponse,
+  jsonModel: string = 'gpt-4o-mini',
+  fallbackModel: string = 'gpt-4o',
+  temperature: number = 0.2,
+  maxTokens: number = 4000
+): Promise<string> {
+  let fullContent = '';
+
+  try {
+    // Try JSON mode with streaming first
+    const stream = await openai.chat.completions.create({
+      model: jsonModel,
+      response_format: { type: 'json_object' },
+      messages,
+      temperature,
+      max_tokens: maxTokens,
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      if (content) {
+        fullContent += content;
+        // Send chunk to client
+        res.write(`data: ${JSON.stringify({ chunk: content, done: false })}\n\n`);
+      }
+    }
+
+    return fullContent;
+  } catch (error) {
+    console.warn(`JSON mode streaming failed on ${jsonModel}, falling back to regular call:`, error);
+
+    // Fallback to regular streaming mode
+    const stream = await openai.chat.completions.create({
+      model: fallbackModel,
+      messages,
+      temperature,
+      max_tokens: maxTokens,
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      if (content) {
+        fullContent += content;
+        res.write(`data: ${JSON.stringify({ chunk: content, done: false })}\n\n`);
+      }
+    }
+
+    return fullContent;
+  }
+}
+
+// Non-streaming version (kept for backwards compatibility)
 async function callOpenAIJson(
   openai: OpenAI,
   messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
@@ -138,11 +195,11 @@ async function callOpenAIJson(
       temperature,
       max_tokens: maxTokens,
     });
-    
+
     return response.choices[0]?.message?.content || '';
   } catch (error) {
     console.warn(`JSON mode failed on ${jsonModel}, falling back to regular call:`, error);
-    
+
     // Fallback to regular mode
     const response = await openai.chat.completions.create({
       model: fallbackModel,
@@ -150,7 +207,7 @@ async function callOpenAIJson(
       temperature,
       max_tokens: maxTokens,
     });
-    
+
     return response.choices[0]?.message?.content || '';
   }
 }
@@ -190,6 +247,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ApiErrorCode.METHOD_NOT_ALLOWED,
       'Only POST method is allowed'
     ));
+  }
+
+  // Check if client wants streaming
+  const useStreaming = req.body.stream === true || req.headers['accept'] === 'text/event-stream';
+
+  // Set up Server-Sent Events headers if streaming
+  if (useStreaming) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
   }
 
   try {
@@ -235,9 +302,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       expand_all_components: req.body.expand_all_components
     };
 
-    // Initialize OpenAI client
+    // Initialize OpenAI client with timeout and retry configuration
     const openai = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
+      timeout: 50000, // 50 seconds (less than Vercel's 60s max to allow for cleanup)
+      maxRetries: 2,  // Retry failed requests up to 2 times
     });
 
     // Build prompt with options
@@ -266,17 +335,58 @@ requirements. Be thorough and complete.`;
 
     const fullPrompt = `${prompt}\n\n${JSON_INSTRUCTIONS}\n\nUnstructured text to analyze:\n${inputData.text}`;
 
-    // Call OpenAI using environment-configured models
-    const content = await callOpenAIJson(
-      openai,
-      [
-        { role: 'system', content: 'You are a senior Product Owner and business analyst. Output only valid JSON.' },
-        { role: 'user', content: fullPrompt }
-      ],
-      env.JSON_MODEL || 'gpt-4o-mini', // Optimized model for JSON responses
-      env.TEXT_MODEL || 'gpt-4o',      // Fallback model for complex responses
-      0.2            // Low temperature for consistent output
-    );
+    // Call OpenAI using environment-configured models with error handling
+    let content: string;
+    try {
+      if (useStreaming) {
+        // Use streaming version
+        content = await callOpenAIJsonStream(
+          openai,
+          [
+            { role: 'system', content: 'You are a senior Product Owner and business analyst. Output only valid JSON.' },
+            { role: 'user', content: fullPrompt }
+          ],
+          res,
+          env.JSON_MODEL || 'gpt-4o-mini',
+          env.TEXT_MODEL || 'gpt-4o',
+          0.2
+        );
+      } else {
+        // Use non-streaming version
+        content = await callOpenAIJson(
+          openai,
+          [
+            { role: 'system', content: 'You are a senior Product Owner and business analyst. Output only valid JSON.' },
+            { role: 'user', content: fullPrompt }
+          ],
+          env.JSON_MODEL || 'gpt-4o-mini',
+          env.TEXT_MODEL || 'gpt-4o',
+          0.2
+        );
+      }
+    } catch (openaiError: any) {
+      // Handle OpenAI-specific errors
+      const errorMessage = openaiError?.message || 'OpenAI API request failed';
+      logError(
+        new ApiError(ApiErrorCode.LLM_ERROR, errorMessage),
+        apiResponse['correlationId'],
+        {
+          openaiError: errorMessage,
+          statusCode: openaiError?.status,
+          type: openaiError?.type
+        }
+      );
+
+      if (useStreaming) {
+        res.write(`data: ${JSON.stringify({ error: errorMessage, done: true })}\n\n`);
+        return res.end();
+      }
+
+      throw new ApiError(
+        ApiErrorCode.LLM_ERROR,
+        `Failed to generate user stories: ${errorMessage}`
+      );
+    }
 
     // Parse and validate response
     try {
@@ -285,8 +395,9 @@ requirements. Be thorough and complete.`;
       // Validate response schema
       const responseValidation = safeParseApiResponse(UserStoriesResponseSchema, result);
 
+      let finalData: GenerationResponse;
       if (responseValidation.success) {
-        return apiResponse.success(responseValidation.data);
+        finalData = responseValidation.data;
       } else {
         logError(
           new ApiError(ApiErrorCode.LLM_ERROR, 'Response validation failed'),
@@ -294,12 +405,19 @@ requirements. Be thorough and complete.`;
           { validationError: responseValidation.success ? 'Unknown error' : (responseValidation as any).error }
         );
         // Still return the data but with warning logged
-        const fallbackResponse: GenerationResponse = {
+        finalData = {
           user_stories: result.user_stories || [],
           edge_cases: result.edge_cases || []
         };
-        return apiResponse.success(fallbackResponse);
       }
+
+      // Send final data and end stream if streaming
+      if (useStreaming) {
+        res.write(`data: ${JSON.stringify({ data: finalData, done: true })}\n\n`);
+        return res.end();
+      }
+
+      return apiResponse.success(finalData);
     } catch (parseError) {
       logError(
         new ApiError(ApiErrorCode.LLM_ERROR, 'Failed to parse LLM response'),
@@ -317,6 +435,11 @@ requirements. Be thorough and complete.`;
         }],
         edge_cases: ['Please review the generated content for edge cases']
       };
+
+      if (useStreaming) {
+        res.write(`data: ${JSON.stringify({ data: fallbackResponse, done: true })}\n\n`);
+        return res.end();
+      }
 
       return apiResponse.success(fallbackResponse);
     }
