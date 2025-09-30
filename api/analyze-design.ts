@@ -239,7 +239,7 @@ async function handleTextGeneration(
     model: env.JSON_MODEL || 'gpt-4o-mini',
     response_format: { type: 'json_object' },
     messages: [
-      { role: 'system', content: 'You are a senior Product Owner. Output only valid JSON.' },
+      { role: 'system', content: 'You are a senior Product Owner. Output only valid JSON with snake_case keys: user_stories and edge_cases.' },
       { role: 'user', content: fullPrompt }
     ],
     temperature: 0.2,
@@ -250,7 +250,12 @@ async function handleTextGeneration(
 
   try {
     const parsed = JSON.parse(content);
-    return apiResponse.success(parsed);
+    // Ensure correct format (snake_case)
+    const formatted = {
+      user_stories: parsed.user_stories || parsed.userStories || [],
+      edge_cases: parsed.edge_cases || parsed.edgeCases || []
+    };
+    return apiResponse.success(formatted);
   } catch (parseError) {
     // Fallback response
     const fallbackResponse = {
