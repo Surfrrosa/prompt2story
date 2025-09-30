@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, FileText, CheckCircle, AlertTriangle, Copy, Download, Settings, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown, Mail, X, Upload, Image } from '@/components/icons'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
-import { getHealth, generateUserStories, generateUserStoriesStreaming, postJson } from '@/lib/api'
+import { getHealth, generateUserStoriesStreaming, postJson } from '@/lib/api'
 import { TypeAnimation } from 'react-type-animation'
 
 interface Metadata {
