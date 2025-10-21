@@ -18,26 +18,26 @@ Transform meeting notes, requirements, or design mockups into structured user st
 
 ## Features
 
-### 🎯 Core Functionality
+### Core Functionality
 - **Dual Input Modes**: Text prompts or design image uploads
 - **AI-Powered Generation**: Uses OpenAI GPT-4o for intelligent story creation
 - **Structured Output**: Generates properly formatted user stories with acceptance criteria
 - **Edge Case Detection**: Identifies potential issues and considerations
 - **Metadata Support**: Optional priority levels and story point estimates
 
-### 🔒 Enterprise Security
+### Enterprise Security
 - **Rate Limiting**: Tier-based protection (5-60 requests/minute by endpoint)
 - **API Security**: Correlation IDs, standardized error handling, request validation
 - **Credential Protection**: Secure environment variable management
 - **CORS Protection**: Configurable origin allowlists
 
-### 🧪 Quality Assurance
+### Quality Assurance
 - **65%+ Test Coverage**: Comprehensive test suite with Vitest + React Testing Library
 - **Type Safety**: Full TypeScript with strict mode and Zod validation
 - **Error Boundaries**: Graceful error handling with user-friendly fallbacks
 - **Performance Monitoring**: Request tracking and optimization
 
-### 🎨 Modern Architecture
+### Modern Architecture
 - **Clean UI**: React 18 + Tailwind CSS + shadcn/ui components
 - **Serverless**: Vercel edge functions for global scalability
 - **Responsive Design**: Mobile-first with accessibility standards
@@ -334,9 +334,17 @@ npm update
 6. Push to the branch: `git push origin feature/amazing-feature`
 7. Open a Pull Request
 
+## Creator
+
+**Prompt2Story** was created by [Shaina Pauley](https://www.deeperpls.com).
+
+Built with a focus on developer experience and production-ready quality for agile teams.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright © 2025 Shaina Pauley
 
 ## Support
 

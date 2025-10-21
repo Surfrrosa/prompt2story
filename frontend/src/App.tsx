@@ -157,7 +157,7 @@ function App() {
       })
       
       if (includeMetadata && story.metadata) {
-        markdown += '\n<details><summary>🧩 Metadata</summary>\n\n'
+        markdown += '\n<details><summary>Metadata</summary>\n\n'
         if (story.metadata.priority) markdown += `- Priority: ${story.metadata.priority}\n`
         if (story.metadata.type) markdown += `- Type: ${story.metadata.type}\n`
         if (story.metadata.component) markdown += `- Component: ${story.metadata.component}\n`
@@ -1014,7 +1014,7 @@ function App() {
                             ) : (
                               <ChevronRight className="h-4 w-4 transition-transform duration-200 rotate-0" />
                             )}
-                            🧩 Metadata
+                            Metadata
                           </button>
                           
                           {expandedMetadata.has(index) && (
@@ -1306,6 +1306,38 @@ function App() {
             </div>
           </div>
         )}
+
+        <footer className="mt-16 pt-8 border-t border-charcoal-light text-center">
+          <p className="text-soft-gray text-sm">
+            © 2025{' '}
+            <a
+              href="https://www.deeperpls.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-vivid-purple hover:text-purple-300 transition-colors"
+            >
+              Shaina Pauley
+            </a>
+            {' • '}
+            <a
+              href="https://github.com/Surfrrosa/prompt2story"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-soft-gray hover:text-pure-white transition-colors"
+            >
+              Open Source
+            </a>
+            {' • '}
+            <a
+              href="https://github.com/Surfrrosa/prompt2story/blob/main/LICENSE"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-soft-gray hover:text-pure-white transition-colors"
+            >
+              MIT License
+            </a>
+          </p>
+        </footer>
       </div>
       <Analytics />
       <SpeedInsights />
