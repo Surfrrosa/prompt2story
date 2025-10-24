@@ -13,19 +13,6 @@
       "maxDuration": 60
     }
   },
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.prompt2story.com"
-        }
-      ],
-      "destination": "https://prompt2story.com/:path*",
-      "permanent": true
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
