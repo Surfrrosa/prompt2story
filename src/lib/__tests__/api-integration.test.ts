@@ -96,9 +96,24 @@ describe('API Integration Tests', () => {
       expect(res._getData()).toBe('');
     });
 
-    it('should reject invalid HTTP methods', async () => {
+    it('should accept GET requests for health check', async () => {
       const req = createRequest({
         method: 'GET',
+        headers: { 'origin': 'http://localhost:3000' }
+      });
+      const res = createResponse();
+
+      await healthzHandler.default(req, res);
+
+      expect(res.statusCode).toBe(200);
+
+      const responseData = JSON.parse(res._getData());
+      expect(responseData.data.ok).toBe(true);
+    });
+
+    it('should reject invalid HTTP methods', async () => {
+      const req = createRequest({
+        method: 'DELETE',
         headers: { 'origin': 'http://localhost:3000' }
       });
       const res = createResponse();

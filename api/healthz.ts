@@ -13,10 +13,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  if (req.method !== 'POST') {
+  if (req.method !== 'POST' && req.method !== 'GET') {
     return apiResponse.error(new ApiError(
       ApiErrorCode.METHOD_NOT_ALLOWED,
-      'Only POST method is allowed'
+      'Only GET and POST methods are allowed'
     ));
   }
 
