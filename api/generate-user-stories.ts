@@ -3,30 +3,12 @@ import OpenAI from 'openai';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { setCorsHeaders, getEnv } from './_env.js';
-import { GenerateUserStoriesSchema, UserStoriesResponseSchema, safeParseApiResponse } from '../src/lib/schemas.js';
+import { GenerateUserStoriesSchema, UserStoriesResponseSchema, safeParseApiResponse, type UserStory, type UserStoriesResponse } from '../src/lib/schemas.js';
 import { rateLimiters } from '../src/lib/rate-limiter.js';
 import { ApiResponse, ApiError, ApiErrorCode, logRequest, logError } from '../src/lib/api-response.js';
 
-interface Metadata {
-  priority: string;
-  type: string;
-  component: string;
-  effort: string;
-  persona: string;
-  persona_other?: string | null;
-}
-
-interface UserStory {
-  title: string;
-  story: string;
-  acceptance_criteria: string[];
-  metadata?: Metadata;
-}
-
-interface GenerationResponse {
-  user_stories: UserStory[];
-  edge_cases: string[];
-}
+// Use the Zod-inferred types from schemas
+type GenerationResponse = UserStoriesResponse;
 
 interface TextInput {
   text: string;

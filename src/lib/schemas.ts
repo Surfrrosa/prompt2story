@@ -21,7 +21,7 @@ export const UserStorySchema = z.object({
   acceptance_criteria: z.array(z.string()),
   metadata: z.object({
     priority: z.enum(['Low', 'Medium', 'High']).optional(),
-    type: z.enum(['Feature', 'Bug', 'Chore', 'Enhancement']).optional(),
+    type: z.enum(['Feature', 'Bug', 'Chore', 'Enhancement', 'Accessibility']).optional(),
     component: z.string().optional(),
     effort: z.string().optional(),
     persona: z.string().optional(),

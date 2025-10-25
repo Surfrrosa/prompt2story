@@ -589,7 +589,7 @@ function App() {
               cursor={true}
             />
           </h1>
-          <p className="text-soft-gray">Transform meeting notes and requirements into structured user stories with AI. The perfect product manager tool for agile teams.</p>
+          <p className="text-soft-gray">Transform meeting notes and requirements into structured user stories with AI.</p>
         </div>
 
         {/* Email Signup Form */}
