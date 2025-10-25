@@ -49,6 +49,7 @@
   },
   "overrides": {
     "path-to-regexp": "^8.0.0",
-    "undici": "^6.0.0"
+    "undici": "^6.0.0",
+    "esbuild": "^0.25.0"
   }
 }
