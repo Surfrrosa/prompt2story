@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { setCorsHeaders } from './_env.js';
 import { rateLimiters } from '../src/lib/rate-limiter.js';
-import { ApiResponse, logRequest } from '../src/lib/api-response.js';
+import { ApiResponse, ApiError, ApiErrorCode, logRequest } from '../src/lib/api-response.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const apiResponse = new ApiResponse(req, res);
@@ -11,6 +11,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return apiResponse.error(new ApiError(
+      ApiErrorCode.METHOD_NOT_ALLOWED,
+      'Only POST method is allowed'
+    ));
   }
 
   try {
