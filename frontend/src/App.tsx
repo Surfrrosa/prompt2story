@@ -64,6 +64,8 @@ function App() {
   ]
   const [isDragOver, setIsDragOver] = useState(false)
   const [dragCounter, setDragCounter] = useState(0)
+  const [showDonationModal, setShowDonationModal] = useState(false)
+  const [donationModalDismissed, setDonationModalDismissed] = useState(false)
 
   const checkBackendHealth = async (): Promise<boolean> => {
     try {
@@ -192,6 +194,11 @@ function App() {
       await navigator.clipboard.writeText(markdown)
       setCopySuccess('Copied to clipboard!')
       setTimeout(() => setCopySuccess(null), 3000)
+
+      // Show donation modal after first successful export
+      if (!donationModalDismissed && localStorage.getItem('donationModalDismissed') !== 'true') {
+        setTimeout(() => setShowDonationModal(true), 1500)
+      }
     } catch {
       setCopySuccess('Failed to copy')
       setTimeout(() => setCopySuccess(null), 3000)
@@ -211,6 +218,11 @@ function App() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+
+    // Show donation modal after first successful export
+    if (!donationModalDismissed && localStorage.getItem('donationModalDismissed') !== 'true') {
+      setTimeout(() => setShowDonationModal(true), 1500)
+    }
   }
 
   const handleDownloadJSON = () => {
@@ -235,6 +247,11 @@ function App() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+
+    // Show donation modal after first successful export
+    if (!donationModalDismissed && localStorage.getItem('donationModalDismissed') !== 'true') {
+      setTimeout(() => setShowDonationModal(true), 1500)
+    }
   }
 
   const toggleMetadataExpansion = (index: number) => {
@@ -378,6 +395,11 @@ function App() {
     const emailSubmitted = localStorage.getItem('emailSubmitted')
     if (dismissed === 'true' || emailSubmitted === 'true') {
       setEmailSignupDismissed(true)
+    }
+
+    const donationDismissed = localStorage.getItem('donationModalDismissed')
+    if (donationDismissed === 'true') {
+      setDonationModalDismissed(true)
     }
   }, [])
 
@@ -1307,7 +1329,92 @@ function App() {
           </div>
         )}
 
-        <footer className="mt-16 pt-8 border-t border-charcoal-light text-center">
+        {/* Donation Modal */}
+        {showDonationModal && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
+            onClick={() => {
+              setShowDonationModal(false)
+              setDonationModalDismissed(true)
+              localStorage.setItem('donationModalDismissed', 'true')
+            }}
+          >
+            <div
+              className="bg-charcoal-lighter border border-charcoal-light rounded-xl max-w-md w-full p-6 relative animate-in slide-in-from-bottom-4 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  setShowDonationModal(false)
+                  setDonationModalDismissed(true)
+                  localStorage.setItem('donationModalDismissed', 'true')
+                }}
+                className="absolute top-4 right-4 text-soft-gray hover:text-pure-white transition-colors"
+                title="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="text-center space-y-4">
+                <div className="flex items-center justify-center mb-4">
+                  <span className="text-6xl">☕</span>
+                </div>
+
+                <h3 className="text-xl font-semibold text-pure-white">
+                  Glad this saved you some time!
+                </h3>
+
+                <p className="text-soft-gray text-sm">
+                  This tool is 100% free and always will be. If it helped you out, consider buying me a coffee to keep the servers running.
+                </p>
+
+                <div className="flex gap-3 pt-2">
+                  <a
+                    href="https://buymeacoffee.com/yourhandle"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1"
+                  >
+                    <Button
+                      className="w-full bg-vivid-purple hover:bg-purple-600 text-pure-white"
+                    >
+                      ☕ Buy Me a Coffee ($3)
+                    </Button>
+                  </a>
+                  <Button
+                    onClick={() => {
+                      setShowDonationModal(false)
+                      setDonationModalDismissed(true)
+                      localStorage.setItem('donationModalDismissed', 'true')
+                    }}
+                    variant="outline"
+                    className="flex-1 bg-charcoal-light border-charcoal-light text-pure-white hover:bg-charcoal-lighter hover:border-soft-gray"
+                  >
+                    Maybe Later
+                  </Button>
+                </div>
+
+                <p className="text-xs text-soft-gray pt-2">
+                  This won't pop up again • No spam, ever
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <footer className="mt-16 pt-8 border-t border-charcoal-light text-center space-y-3">
+          <p className="text-soft-gray text-sm">
+            Enjoying this tool? Consider{' '}
+            <a
+              href="https://buymeacoffee.com/yourhandle"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-vivid-purple hover:text-purple-300 transition-colors inline-flex items-center gap-1"
+            >
+              buying me a coffee ☕
+            </a>
+            {' '}to keep it running
+          </p>
           <p className="text-soft-gray text-sm">
             © 2025{' '}
             <a
