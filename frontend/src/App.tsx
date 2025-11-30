@@ -605,7 +605,7 @@ function App() {
               </button>
               <div className="text-center">
                 <p className="text-soft-gray mb-4">
-                  <strong>Get notified when we launch advanced features — no spam, ever.</strong>
+                  <strong>Get notified when we launch advanced features. No spam, ever.</strong>
                 </p>
                 {emailSignupSuccess ? (
                   <div className="text-green-400 font-medium animate-in slide-in-from-top-2 duration-200">
