@@ -1370,7 +1370,7 @@ function App() {
 
                 <div className="flex gap-3 pt-2">
                   <a
-                    href="https://buymeacoffee.com/yourhandle"
+                    href="https://buymeacoffee.com/shainapauley"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1"
@@ -1406,7 +1406,7 @@ function App() {
           <p className="text-soft-gray text-sm">
             Enjoying this tool? Consider{' '}
             <a
-              href="https://buymeacoffee.com/yourhandle"
+              href="https://buymeacoffee.com/shainapauley"
               target="_blank"
               rel="noopener noreferrer"
               className="text-vivid-purple hover:text-purple-300 transition-colors inline-flex items-center gap-1"
