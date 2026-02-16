@@ -29,51 +29,6 @@ env:
   API_URL_STAGING: https://prompt2story.vercel.app/api
 
 jobs:
-  daily-health:
-    if: github.event_name == 'schedule' || github.event.inputs.check_type == 'health'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Make scripts executable
-        run: chmod +x ops/*.sh
-      - name: Run Daily Health Check
-        id: health_check
-        run: ./health_check.sh
-        working-directory: ops
-      - name: Upload artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: health-check-failure-${{ github.run_number }}
-          path: ops/artifacts/
-      - name: Slack alert on failure
-        if: failure()
-        run: |
-          payload='{"text":":rotating_light: *Daily health check failed* — run: '${{ github.server_url }}'/'${{ github.repository }}'/actions/runs/'${{ github.run_id }}'"}'
-          curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "${{ secrets.SLACK_WEBHOOK_URL }}"
-
-  hourly-watchdog:
-    if: github.event_name == 'schedule' || github.event.inputs.check_type == 'hourly'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Make scripts executable
-        run: chmod +x ops/*.sh
-      - name: Run Hourly Watchdog
-        id: watchdog_check
-        run: ./hourly_watchdog.sh
-        working-directory: ops
-      - name: Upload artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: watchdog-failure-${{ github.run_number }}
-          path: ops/artifacts/
-      - name: Slack alert on failure
-        if: failure()
-        run: |
-          payload='{"text":":rotating_light: *Hourly watchdog breach* — run: '${{ github.server_url }}'/'${{ github.repository }}'/actions/runs/'${{ github.run_id }}'"}'
-          curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "${{ secrets.SLACK_WEBHOOK_URL }}"
 
   weekly-performance:
     if: github.event_name == 'schedule' || github.event.inputs.check_type == 'weekly'
