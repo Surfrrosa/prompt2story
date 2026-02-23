@@ -113,9 +113,7 @@ function App() {
         },
         (data: GenerationResponse) => {
           // On complete, set the final result
-          console.log('Streaming complete, received data:', data)
           if (data.user_stories && data.user_stories.length > 0) {
-            console.log('First story metadata:', data.user_stories[0].metadata)
           }
           setResult(data)
           setStreamingText('')
@@ -279,19 +277,14 @@ function App() {
   }
 
   const handleSubmitFeedback = async (storyIndex: number) => {
-    console.log('handleSubmitFeedback called with storyIndex:', storyIndex)
     const feedbackState = feedbackStates.get(storyIndex)
-    console.log('feedbackState:', feedbackState)
     
     if (!feedbackState || !feedbackState.rating) {
-      console.log('No feedback state or rating, returning early')
       return
     }
 
     try {
       const story = result?.user_stories[storyIndex]
-      console.log('Submitting feedback to: /api/submit-feedback')
-      console.log('Story:', story)
       
       const responseData = await postJson('/api/submit-feedback', {
         rating: feedbackState.rating,
@@ -301,7 +294,6 @@ function App() {
         timestamp: new Date().toISOString()
       })
 
-      console.log('Response data:', responseData)
 
       const newStates = new Map(feedbackStates)
       newStates.set(storyIndex, { rating: 'down', text: '', expanded: false, submitted: true })
@@ -338,13 +330,10 @@ function App() {
 
       // Extract the regenerated story from the response
       const regeneratedStory = apiResponse.data?.regenerated_story || apiResponse.regenerated_story || apiResponse
-      console.log('Regenerated story:', regeneratedStory)
-      console.log('Story index:', storyIndex)
 
       const updatedResult = { ...result }
       updatedResult.user_stories = [...result.user_stories]
       updatedResult.user_stories[storyIndex] = regeneratedStory
-      console.log('Updated result:', updatedResult)
       setResult(updatedResult)
 
       const newFeedbackStates = new Map(feedbackStates)
@@ -416,7 +405,6 @@ function App() {
 
   const handleExportConfirm = (withEmail: boolean) => {
     if (withEmail && email) {
-      console.log('Sending export to:', email)
     }
     
     if (pendingExportAction) {
@@ -508,7 +496,6 @@ function App() {
       }
 
       const apiResponse = await response.json()
-      console.log('Image API Response:', apiResponse)
 
       // Extract the actual data from the API response
       const data: GenerationResponse = apiResponse.data
@@ -711,7 +698,6 @@ function App() {
                         type="checkbox"
                         checked={includeMetadata}
                         onChange={(e) => {
-                          console.log('Checkbox onChange called:', e.target.checked);
                           setIncludeMetadata(e.target.checked);
                         }}
                         className="w-4 h-4 text-vivid-purple bg-charcoal-light border-soft-gray rounded focus:ring-vivid-purple focus:ring-2"
@@ -884,7 +870,6 @@ function App() {
                         type="checkbox"
                         checked={includeMetadata}
                         onChange={(e) => {
-                          console.log('Checkbox onChange called:', e.target.checked);
                           setIncludeMetadata(e.target.checked);
                         }}
                         className="w-4 h-4 text-vivid-purple bg-charcoal-light border-soft-gray rounded focus:ring-vivid-purple focus:ring-2"
@@ -992,9 +977,6 @@ function App() {
               <div className="space-y-4">
                 {(() => {
                   try {
-                    console.log('Rendering user stories, result:', result)
-                    console.log('result.user_stories:', result.user_stories)
-                    console.log('result.user_stories length:', result.user_stories?.length)
 
                     if (!result.user_stories || !Array.isArray(result.user_stories)) {
                       console.error('user_stories is not an array:', result.user_stories)
@@ -1002,7 +984,6 @@ function App() {
                     }
 
                     return result.user_stories.map((story, index) => {
-                      console.log(`Rendering story ${index}:`, story)
                       return (
                   <Card key={index} className="bg-charcoal-lighter border-charcoal-light rounded-xl">
                     <CardHeader>
