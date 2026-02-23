@@ -1,0 +1,10 @@
+{
+  "quality": {
+    "ignore": [
+      "api/**",
+      "check-coverage.js",
+      "frontend/src/components/**",
+      "frontend/src/lib/**"
+    ]
+  }
+}
