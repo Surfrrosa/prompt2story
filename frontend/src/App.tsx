@@ -286,7 +286,7 @@ function App() {
     try {
       const story = result?.user_stories[storyIndex]
       
-      const responseData = await postJson('/api/submit-feedback', {
+      await postJson('/api/submit-feedback', {
         rating: feedbackState.rating,
         feedback_text: feedbackState.text,
         story_title: story?.title,
