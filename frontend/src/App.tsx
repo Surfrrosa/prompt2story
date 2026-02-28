@@ -8,6 +8,8 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import { getHealth, generateUserStoriesStreaming, postJson } from '@/lib/api'
 import { TypeAnimation } from 'react-type-animation'
+import { StoryRoom } from '@/components/StoryRoom/StoryRoom'
+import { ModeToggle, type GenerateMode } from '@/components/StoryRoom/ModeToggle'
 
 interface Metadata {
   priority: 'Low' | 'Medium' | 'High'
@@ -31,6 +33,7 @@ interface GenerationResponse {
 }
 
 function App() {
+  const [generateMode, setGenerateMode] = useState<GenerateMode>('story-room')
   const [inputText, setInputText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<GenerationResponse | null>(null)
@@ -643,6 +646,22 @@ function App() {
           </Card>
         )}
 
+        {/* Mode Toggle */}
+        <div className="flex justify-center mb-6">
+          <ModeToggle
+            mode={generateMode}
+            onChange={setGenerateMode}
+            disabled={isLoading}
+          />
+        </div>
+
+        {/* Story Room Mode */}
+        {generateMode === 'story-room' && (
+          <StoryRoom />
+        )}
+
+        {/* Quick Generate Mode (existing UI) */}
+        {generateMode === 'quick' && (<>
         <Card className="bg-charcoal-lighter border-charcoal-light mb-8">
           <CardHeader>
             <CardTitle className="text-pure-white flex items-center gap-2">
@@ -1382,6 +1401,9 @@ function App() {
             </div>
           </div>
         )}
+
+        {/* End of Quick Generate conditional */}
+        </>)}
 
         <footer className="mt-16 pt-8 border-t border-charcoal-light text-center space-y-3">
           <p className="text-soft-gray text-sm">

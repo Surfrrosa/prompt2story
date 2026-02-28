@@ -11,6 +11,9 @@
     },
     "api/regenerate-story.ts": {
       "maxDuration": 60
+    },
+    "api/story-room.ts": {
+      "maxDuration": 60
     }
   },
   "headers": [

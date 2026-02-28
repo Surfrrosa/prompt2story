@@ -37,11 +37,21 @@ export default {
   				to: {
   					height: '0'
   				}
-  			}
+  			},
+  			'blink': {
+  				'0%, 100%': { opacity: '1' },
+  				'50%': { opacity: '0' },
+  			},
+  			'fadeIn': {
+  				'0%': { opacity: '0', transform: 'translateX(-8px)' },
+  				'100%': { opacity: '1', transform: 'translateX(0)' },
+  			},
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'blink': 'blink 1s step-end infinite',
+  			'fadeIn': 'fadeIn 0.3s ease-out',
   		}
   	}
   },
