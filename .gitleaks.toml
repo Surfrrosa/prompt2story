@@ -1,0 +1,19 @@
+# Gitleaks configuration
+# Test files contain mock/fake tokens for unit testing (not real secrets)
+
+[extend]
+useDefault = true
+
+[[allowlist]]
+description = "Test files with mock tokens"
+paths = [
+  '''__tests__/.*\.test\.(js|ts)$''',
+  '''\.test\.(js|ts)$''',
+]
+
+[[allowlist]]
+description = "Test fixture tokens in secure-logger tests"
+commits = [
+  "7903da7",
+  "eb035a5",
+]
