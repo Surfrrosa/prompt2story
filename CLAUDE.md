@@ -73,12 +73,16 @@ npm run build
 
 ## Known Technical Debt
 
-### Monolithic App.tsx (High)
-`frontend/src/App.tsx` is 63KB and should be split into smaller components.
-Files affected: `frontend/src/App.tsx`
+### ~~Monolithic App.tsx~~ (Resolved)
+Split into QuickGenerate component tree (7 components, 4 hooks, 1 types file).
+App.tsx is now 87 lines.
 
-### In-memory rate limiter (Medium)
-Works for development but needs Redis/KV for production scalability.
+### In-memory rate limiter (Low -- acceptable for current scale)
+Works for dev and low-traffic production on Vercel. Resets on cold starts,
+which means rate limits are per-instance and not globally consistent. This is
+acceptable for abuse prevention (not precision metering) at current traffic
+levels. When traffic justifies it, upgrade to Vercel KV (Redis-compatible).
+No code changes required for the migration -- only the store backend changes.
 Files affected: `src/lib/rate-limiter.ts`
 
 ## Dependencies
