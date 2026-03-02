@@ -13,7 +13,8 @@
       "maxDuration": 60
     },
     "api/story-room.ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "prompts/story-room/**"
     }
   },
   "headers": [

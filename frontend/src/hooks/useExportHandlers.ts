@@ -1,28 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
+import { downloadBlob } from '@/lib/utils'
 import type { GenerationResponse } from '@/types/stories'
 
 export function useExportHandlers(result: GenerationResponse | null, includeMetadata: boolean) {
   const [copySuccess, setCopySuccess] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [emailSignupSuccess, setEmailSignupSuccess] = useState(false)
-  const [emailSignupDismissed, setEmailSignupDismissed] = useState(false)
+  const [emailSignupDismissed, setEmailSignupDismissed] = useState(
+    () => localStorage.getItem('emailSignupDismissed') === 'true' || localStorage.getItem('emailSubmitted') === 'true'
+  )
   const [showExportModal, setShowExportModal] = useState(false)
   const [pendingExportAction, setPendingExportAction] = useState<(() => void) | null>(null)
   const [showDonationModal, setShowDonationModal] = useState(false)
-  const [donationModalDismissed, setDonationModalDismissed] = useState(false)
-
-  useEffect(() => {
-    const dismissed = localStorage.getItem('emailSignupDismissed')
-    const emailSubmitted = localStorage.getItem('emailSubmitted')
-    if (dismissed === 'true' || emailSubmitted === 'true') {
-      setEmailSignupDismissed(true)
-    }
-
-    const donationDismissed = localStorage.getItem('donationModalDismissed')
-    if (donationDismissed === 'true') {
-      setDonationModalDismissed(true)
-    }
-  }, [])
+  const [donationModalDismissed, setDonationModalDismissed] = useState(
+    () => localStorage.getItem('donationModalDismissed') === 'true'
+  )
 
   const handleModalDismiss = useCallback(() => {
     setShowExportModal(false)
@@ -31,16 +23,13 @@ export function useExportHandlers(result: GenerationResponse | null, includeMeta
   }, [])
 
   useEffect(() => {
-    const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && showExportModal) {
-        handleModalDismiss()
-      }
-    }
+    if (!showExportModal) return
 
-    document.addEventListener('keydown', handleEscapeKey)
-    return () => {
-      document.removeEventListener('keydown', handleEscapeKey)
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') handleModalDismiss()
     }
+    document.addEventListener('keydown', handleEscapeKey)
+    return () => document.removeEventListener('keydown', handleEscapeKey)
   }, [showExportModal, handleModalDismiss])
 
   const generateMarkdown = (data: GenerationResponse): string => {
@@ -83,7 +72,7 @@ export function useExportHandlers(result: GenerationResponse | null, includeMeta
   }
 
   const showDonationAfterExport = () => {
-    if (!donationModalDismissed && localStorage.getItem('donationModalDismissed') !== 'true') {
+    if (!donationModalDismissed) {
       setTimeout(() => setShowDonationModal(true), 1500)
     }
   }
@@ -105,17 +94,7 @@ export function useExportHandlers(result: GenerationResponse | null, includeMeta
 
   const handleDownloadMarkdown = () => {
     if (!result) return
-
-    const markdown = generateMarkdown(result)
-    const blob = new Blob([markdown], { type: 'text/markdown' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'user-stories.md'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    downloadBlob(generateMarkdown(result), 'user-stories.md', 'text/markdown')
     showDonationAfterExport()
   }
 
@@ -131,21 +110,12 @@ export function useExportHandlers(result: GenerationResponse | null, includeMeta
       edge_cases: result.edge_cases,
     }
 
-    const jsonString = JSON.stringify(exportData, null, 2)
-    const blob = new Blob([jsonString], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'user-stories.json'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    downloadBlob(JSON.stringify(exportData, null, 2), 'user-stories.json', 'application/json')
     showDonationAfterExport()
   }
 
   const handleExportWithModal = (exportAction: () => void) => {
-    if (emailSignupDismissed || localStorage.getItem('emailSubmitted') === 'true' || localStorage.getItem('emailSignupDismissed') === 'true') {
+    if (emailSignupDismissed) {
       exportAction()
       return
     }

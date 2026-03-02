@@ -21,14 +21,13 @@ export function QuickGenerateMode() {
   const generate = useQuickGenerate()
   const exportHandlers = useExportHandlers(generate.result, generate.settings.includeMetadata)
   const designUpload = useDesignUpload(
-    generate.checkBackendHealth,
-    generate.updateResult,
+    generate.setResult,
     generate.setError,
     generate.clearError,
   )
   const feedback = useFeedbackAndRegenerate(
     generate.result,
-    generate.updateResult,
+    generate.setResult,
     generate.inputText,
     designUpload.uploadedFile,
     generate.settings.includeMetadata,
@@ -84,85 +83,71 @@ export function QuickGenerateMode() {
           </div>
 
           {inputMode === 'text' ? (
-            <>
-              <Textarea
-                placeholder="Ex: We discussed in the meeting that users should get SMS alerts when their tasks are overdue. Also, marketing needs the dashboard export by Friday."
-                value={generate.inputText}
-                onChange={(e) => generate.setInputText(e.target.value)}
-                className="min-h-32 bg-charcoal-light border-charcoal-light text-pure-white placeholder-soft-gray resize-none"
-                disabled={generate.isLoading}
-              />
-
-              <QuickGenerateSettings
-                includeMetadata={generate.settings.includeMetadata}
-                inferEdgeCases={generate.settings.inferEdgeCases}
-                includeAdvancedCriteria={generate.settings.includeAdvancedCriteria}
-                expandAllComponents={generate.settings.expandAllComponents}
-                disabled={generate.isLoading}
-                onIncludeMetadataChange={(v) => generate.setSettings(s => ({ ...s, includeMetadata: v }))}
-                onInferEdgeCasesChange={(v) => generate.setSettings(s => ({ ...s, inferEdgeCases: v }))}
-                onIncludeAdvancedCriteriaChange={(v) => generate.setSettings(s => ({ ...s, includeAdvancedCriteria: v }))}
-                onExpandAllComponentsChange={(v) => generate.setSettings(s => ({ ...s, expandAllComponents: v }))}
-              />
-
-              <Button
-                onClick={generate.handleGenerate}
-                disabled={generate.isLoading || !generate.inputText.trim()}
-                className="w-full bg-vivid-purple hover:bg-charcoal-light text-pure-white transition-colors duration-150 ease-in-out"
-              >
-                {generate.isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating User Stories...
-                  </>
-                ) : (
-                  'Generate User Stories'
-                )}
-              </Button>
-            </>
+            <Textarea
+              placeholder="Ex: We discussed in the meeting that users should get SMS alerts when their tasks are overdue. Also, marketing needs the dashboard export by Friday."
+              value={generate.inputText}
+              onChange={(e) => generate.setInputText(e.target.value)}
+              className="min-h-32 bg-charcoal-light border-charcoal-light text-pure-white placeholder-soft-gray resize-none"
+              disabled={generate.isLoading}
+            />
           ) : (
-            <>
-              <DesignUploadZone
-                isDragOver={designUpload.isDragOver}
-                isProcessingFile={designUpload.isProcessingFile}
-                processingMessage={designUpload.processingMessage}
-                uploadedFile={designUpload.uploadedFile}
-                filePreview={designUpload.filePreview}
-                onFileUpload={designUpload.handleFileUpload}
-                onClearFile={designUpload.handleClearFile}
-                onDragEnter={designUpload.handleDragEnter}
-                onDragLeave={designUpload.handleDragLeave}
-                onDragOver={designUpload.handleDragOver}
-                onDrop={designUpload.handleDrop}
-              />
+            <DesignUploadZone
+              isDragOver={designUpload.isDragOver}
+              isProcessingFile={designUpload.isProcessingFile}
+              processingMessage={designUpload.processingMessage}
+              uploadedFile={designUpload.uploadedFile}
+              filePreview={designUpload.filePreview}
+              onFileUpload={designUpload.handleFileUpload}
+              onClearFile={designUpload.handleClearFile}
+              onDragEnter={designUpload.handleDragEnter}
+              onDragLeave={designUpload.handleDragLeave}
+              onDragOver={designUpload.handleDragOver}
+              onDrop={designUpload.handleDrop}
+            />
+          )}
 
-              <QuickGenerateSettings
-                includeMetadata={generate.settings.includeMetadata}
-                inferEdgeCases={generate.settings.inferEdgeCases}
-                includeAdvancedCriteria={generate.settings.includeAdvancedCriteria}
-                expandAllComponents={generate.settings.expandAllComponents}
-                disabled={designUpload.isProcessingFile}
-                onIncludeMetadataChange={(v) => generate.setSettings(s => ({ ...s, includeMetadata: v }))}
-                onInferEdgeCasesChange={(v) => generate.setSettings(s => ({ ...s, inferEdgeCases: v }))}
-                onIncludeAdvancedCriteriaChange={(v) => generate.setSettings(s => ({ ...s, includeAdvancedCriteria: v }))}
-                onExpandAllComponentsChange={(v) => generate.setSettings(s => ({ ...s, expandAllComponents: v }))}
-              />
+          <QuickGenerateSettings
+            includeMetadata={generate.settings.includeMetadata}
+            inferEdgeCases={generate.settings.inferEdgeCases}
+            includeAdvancedCriteria={generate.settings.includeAdvancedCriteria}
+            expandAllComponents={generate.settings.expandAllComponents}
+            disabled={inputMode === 'text' ? generate.isLoading : designUpload.isProcessingFile}
+            onIncludeMetadataChange={(v) => generate.setSettings(s => ({ ...s, includeMetadata: v }))}
+            onInferEdgeCasesChange={(v) => generate.setSettings(s => ({ ...s, inferEdgeCases: v }))}
+            onIncludeAdvancedCriteriaChange={(v) => generate.setSettings(s => ({ ...s, includeAdvancedCriteria: v }))}
+            onExpandAllComponentsChange={(v) => generate.setSettings(s => ({ ...s, expandAllComponents: v }))}
+          />
 
-              <Button
-                onClick={designUpload.handleAnalyzeDesign}
-                disabled={designUpload.isProcessingFile || !designUpload.uploadedFile}
-                className="w-full bg-vivid-purple hover:bg-charcoal-light text-pure-white transition-colors duration-150 ease-in-out"
-              >
-                {designUpload.isProcessingFile ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing Design...
-                  </>
-                ) : (
-                  'Analyze Design'
-                )}
-              </Button>
-            </>
+          {inputMode === 'text' ? (
+            <Button
+              onClick={generate.handleGenerate}
+              disabled={generate.isLoading || !generate.inputText.trim()}
+              className="w-full bg-vivid-purple hover:bg-charcoal-light text-pure-white transition-colors duration-150 ease-in-out"
+            >
+              {generate.isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating User Stories...
+                </>
+              ) : (
+                'Generate User Stories'
+              )}
+            </Button>
+          ) : (
+            <Button
+              onClick={designUpload.handleAnalyzeDesign}
+              disabled={designUpload.isProcessingFile || !designUpload.uploadedFile}
+              className="w-full bg-vivid-purple hover:bg-charcoal-light text-pure-white transition-colors duration-150 ease-in-out"
+            >
+              {designUpload.isProcessingFile ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing Design...
+                </>
+              ) : (
+                'Analyze Design'
+              )}
+            </Button>
           )}
         </CardContent>
       </Card>

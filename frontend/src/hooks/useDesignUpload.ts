@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { classifyApiError } from '@/lib/utils'
 import type { GenerationResponse } from '@/types/stories'
 
 const processingMessages = [
@@ -10,7 +11,6 @@ const processingMessages = [
 ]
 
 export function useDesignUpload(
-  checkBackendHealth: () => Promise<boolean>,
   setResult: (result: GenerationResponse) => void,
   setError: (error: string) => void,
   clearError: () => void,
@@ -35,9 +35,9 @@ export function useDesignUpload(
   }, [isProcessingFile])
 
   const processFile = (file: File) => {
-    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
+    const validTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf', 'text/plain', 'text/markdown']
     if (!validTypes.includes(file.type)) {
-      setError('Please upload a PNG, JPG, or PDF file')
+      setError('Please upload an image (PNG, JPG, WEBP, GIF), PDF, TXT, or MD file')
       return
     }
 
@@ -76,12 +76,6 @@ export function useDesignUpload(
     clearError()
 
     try {
-      const isBackendHealthy = await checkBackendHealth()
-      if (!isBackendHealthy) {
-        setError('Backend unreachable at /api/healthz. The serverless API may be starting up, please try again.')
-        return
-      }
-
       const formData = new FormData()
       formData.append('image', uploadedFile)
       formData.append('prompt', '')
@@ -100,13 +94,7 @@ export function useDesignUpload(
       const data: GenerationResponse = apiResponse.data
       setResult(data)
     } catch (err) {
-      if (err instanceof TypeError && err.message.includes('fetch')) {
-        setError('Cannot connect to serverless API. Please try again in a moment.')
-      } else if (err instanceof Error && err.message.includes('OpenAI')) {
-        setError('API configuration error. Please check server logs and ensure OPENAI_API_KEY is set.')
-      } else {
-        setError(err instanceof Error ? err.message : 'An unexpected error occurred')
-      }
+      setError(classifyApiError(err))
     } finally {
       setIsProcessingFile(false)
     }

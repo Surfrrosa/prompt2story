@@ -50,25 +50,30 @@ export async function runAgent(
   });
 
   let fullText = '';
+  let timeoutId: NodeJS.Timeout;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(
+    timeoutId = setTimeout(
       () => reject(new Error(`Agent ${config.role} timed out after ${timeoutMs}ms`)),
       timeoutMs
     );
   });
 
-  await Promise.race([
-    (async () => {
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-          fullText += content;
-          onChunk(content);
+  try {
+    await Promise.race([
+      (async () => {
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content || '';
+          if (content) {
+            fullText += content;
+            onChunk(content);
+          }
         }
-      }
-    })(),
-    timeoutPromise,
-  ]);
+      })(),
+      timeoutPromise,
+    ]);
+  } finally {
+    clearTimeout(timeoutId!);
+  }
 
   const structured = parseAgentOutput(fullText, config.role);
 
@@ -79,7 +84,12 @@ export async function runAgent(
   };
 }
 
+const templateCache = new Map<string, string>();
+
 function loadPromptTemplate(templatePath: string): string {
+  const cached = templateCache.get(templatePath);
+  if (cached) return cached;
+
   const possiblePaths = [
     join(process.cwd(), templatePath),
     join(process.cwd(), '..', templatePath),
@@ -87,7 +97,9 @@ function loadPromptTemplate(templatePath: string): string {
 
   for (const path of possiblePaths) {
     try {
-      return readFileSync(path, 'utf-8');
+      const content = readFileSync(path, 'utf-8');
+      templateCache.set(templatePath, content);
+      return content;
     } catch {
       continue;
     }

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { AgentStatusBadge } from './AgentStatusBadge'
@@ -43,7 +43,7 @@ export function AgentCard({
   }, [streamedText])
 
   const showText = status === 'thinking' || status === 'complete' || status === 'error'
-  const displayText = stripJsonBlocks(streamedText)
+  const displayText = useMemo(() => stripJsonBlocks(streamedText), [streamedText])
 
   return (
     <Card

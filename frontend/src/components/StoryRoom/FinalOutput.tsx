@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Copy, Download, ChevronDown, ChevronRight } from '@/components/icons'
+import { downloadBlob } from '@/lib/utils'
 
 interface UserStory {
   title: string
@@ -64,7 +65,7 @@ export function FinalOutput({ output, onReset, elapsedMs }: FinalOutputProps) {
   const [expandedMetadata, setExpandedMetadata] = useState<Set<number>>(new Set())
   const [copySuccess, setCopySuccess] = useState(false)
 
-  const data = normalizeOutput(output)
+  const data = useMemo(() => normalizeOutput(output), [output])
   if (!data?.user_stories?.length) {
     return (
       <Card className="bg-charcoal-lighter border-charcoal-light mt-4">
@@ -110,14 +111,7 @@ export function FinalOutput({ output, onReset, elapsedMs }: FinalOutputProps) {
   }
 
   const handleDownload = () => {
-    const json = JSON.stringify(data, null, 2)
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'user-stories.json'
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadBlob(JSON.stringify(data, null, 2), 'user-stories.json', 'application/json')
   }
 
   return (

@@ -205,7 +205,6 @@ async function runPipeline(
           data: {
             failedAgent: role,
             error: errorMessage,
-            partialOutput: Object.fromEntries(context),
           },
         }, correlationId);
         return;
