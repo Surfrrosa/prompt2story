@@ -4,7 +4,8 @@
   "outputDirectory": "frontend/dist",
   "functions": {
     "api/generate-user-stories.ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "prompts/user_story_prompt.md"
     },
     "api/analyze-design.ts": {
       "maxDuration": 60

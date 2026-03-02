@@ -4,19 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Copy, Download, ChevronDown, ChevronRight } from '@/components/icons'
 import { downloadBlob } from '@/lib/utils'
-
-interface UserStory {
-  title: string
-  story: string
-  acceptance_criteria: string[]
-  metadata?: {
-    priority?: 'Low' | 'Medium' | 'High'
-    type?: string
-    component?: string
-    effort?: string
-    persona?: string
-  }
-}
+import type { UserStory } from '@/types/stories'
 
 interface FinalOutputData {
   user_stories: UserStory[]

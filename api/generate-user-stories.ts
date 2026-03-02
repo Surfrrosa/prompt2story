@@ -29,8 +29,12 @@ function validateEnvironment(): void {
   }
 }
 
-// Load prompt templates
+// Load prompt templates (cached for warm invocations)
+let cachedPrompt: string | null = null;
+
 function loadPrompt(): string {
+  if (cachedPrompt) return cachedPrompt;
+
   try {
     // Try multiple possible locations for the prompt file
     const possiblePaths = [
@@ -38,15 +42,16 @@ function loadPrompt(): string {
       join(process.cwd(), '..', 'prompts', 'user_story_prompt.md'),
       join(process.cwd(), 'frontend', 'prompts', 'user_story_prompt.md'),
     ];
-    
+
     for (const promptPath of possiblePaths) {
       try {
-        return readFileSync(promptPath, 'utf-8');
+        cachedPrompt = readFileSync(promptPath, 'utf-8');
+        return cachedPrompt;
       } catch (error) {
         continue;
       }
     }
-    
+
     // If all paths fail, use comprehensive fallback matching the original
     throw new Error('Prompt file not found');
   } catch (error) {
