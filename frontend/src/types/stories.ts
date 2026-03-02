@@ -1,9 +1,9 @@
 export interface Metadata {
-  priority: 'Low' | 'Medium' | 'High'
-  type: 'Feature' | 'Bug' | 'Chore' | 'Enhancement'
-  component: string
-  effort: string
-  persona: 'End User' | 'Admin' | 'Support Agent' | 'Engineer' | 'Designer' | 'QA' | 'Customer' | 'Other'
+  priority?: 'Low' | 'Medium' | 'High'
+  type?: 'Feature' | 'Bug' | 'Chore' | 'Enhancement'
+  component?: string
+  effort?: string
+  persona?: 'End User' | 'Admin' | 'Support Agent' | 'Engineer' | 'Designer' | 'QA' | 'Customer' | 'Other'
   persona_other?: string
 }
 
