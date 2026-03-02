@@ -1,8 +1,6 @@
 // Story Room: Single-agent execution with streaming and JSON extraction
 
 import type OpenAI from 'openai';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import type { AgentConfig } from './types.js';
 import { parseAgentOutput } from './parser.js';
 
@@ -30,8 +28,7 @@ export async function runAgent(
     }
   }
 
-  const prompt = loadPromptTemplate(config.promptTemplate);
-  const systemMessage = populateTemplate(prompt, {
+  const systemMessage = populateTemplate(config.promptTemplate, {
     title: config.title,
     tagline: config.tagline,
     contextJson: JSON.stringify(agentContext, null, 2),
@@ -82,31 +79,6 @@ export async function runAgent(
     structured,
     durationMs: Date.now() - start,
   };
-}
-
-const templateCache = new Map<string, string>();
-
-function loadPromptTemplate(templatePath: string): string {
-  const cached = templateCache.get(templatePath);
-  if (cached) return cached;
-
-  const possiblePaths = [
-    join(process.cwd(), templatePath),
-    join(process.cwd(), '..', templatePath),
-  ];
-
-  for (const path of possiblePaths) {
-    try {
-      const content = readFileSync(path, 'utf-8');
-      templateCache.set(templatePath, content);
-      return content;
-    } catch {
-      continue;
-    }
-  }
-
-  // Should not happen in production -- prompt files are deployed with the app
-  throw new Error(`Prompt template not found: ${templatePath}`);
 }
 
 function populateTemplate(template: string, vars: Record<string, string>): string {
