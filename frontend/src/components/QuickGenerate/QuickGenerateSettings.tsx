@@ -1,27 +1,16 @@
 import { Settings, ChevronRight } from '@/components/icons'
+import type { QuickGenerateSettings as QuickGenerateSettingsType } from '@/hooks/useQuickGenerate'
 
 interface QuickGenerateSettingsProps {
-  includeMetadata: boolean
-  inferEdgeCases: boolean
-  includeAdvancedCriteria: boolean
-  expandAllComponents: boolean
+  settings: QuickGenerateSettingsType
   disabled: boolean
-  onIncludeMetadataChange: (checked: boolean) => void
-  onInferEdgeCasesChange: (checked: boolean) => void
-  onIncludeAdvancedCriteriaChange: (checked: boolean) => void
-  onExpandAllComponentsChange: (checked: boolean) => void
+  onSettingsChange: React.Dispatch<React.SetStateAction<QuickGenerateSettingsType>>
 }
 
 export function QuickGenerateSettings({
-  includeMetadata,
-  inferEdgeCases,
-  includeAdvancedCriteria,
-  expandAllComponents,
+  settings,
   disabled,
-  onIncludeMetadataChange,
-  onInferEdgeCasesChange,
-  onIncludeAdvancedCriteriaChange,
-  onExpandAllComponentsChange,
+  onSettingsChange,
 }: QuickGenerateSettingsProps) {
   return (
     <div className="space-y-3 p-3 bg-charcoal-light rounded-lg border border-charcoal-light">
@@ -30,8 +19,8 @@ export function QuickGenerateSettings({
         <label className="flex items-center space-x-2 cursor-pointer">
           <input
             type="checkbox"
-            checked={includeMetadata}
-            onChange={(e) => onIncludeMetadataChange(e.target.checked)}
+            checked={settings.includeMetadata}
+            onChange={(e) => onSettingsChange(s => ({ ...s, includeMetadata: e.target.checked }))}
             className="w-4 h-4 text-vivid-purple bg-charcoal-light border-soft-gray rounded focus:ring-vivid-purple focus:ring-2"
             disabled={disabled}
           />
@@ -49,8 +38,8 @@ export function QuickGenerateSettings({
           <label className="flex items-center space-x-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={inferEdgeCases}
-              onChange={(e) => onInferEdgeCasesChange(e.target.checked)}
+              checked={settings.inferEdgeCases}
+              onChange={(e) => onSettingsChange(s => ({ ...s, inferEdgeCases: e.target.checked }))}
               className="w-3 h-3 text-vivid-purple bg-charcoal-light border-soft-gray rounded focus:ring-vivid-purple focus:ring-2"
               disabled={disabled}
             />
@@ -59,8 +48,8 @@ export function QuickGenerateSettings({
           <label className="flex items-center space-x-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={includeAdvancedCriteria}
-              onChange={(e) => onIncludeAdvancedCriteriaChange(e.target.checked)}
+              checked={settings.includeAdvancedCriteria}
+              onChange={(e) => onSettingsChange(s => ({ ...s, includeAdvancedCriteria: e.target.checked }))}
               className="w-3 h-3 text-vivid-purple bg-charcoal-light border-soft-gray rounded focus:ring-vivid-purple focus:ring-2"
               disabled={disabled}
             />
@@ -69,8 +58,8 @@ export function QuickGenerateSettings({
           <label className="flex items-center space-x-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={expandAllComponents}
-              onChange={(e) => onExpandAllComponentsChange(e.target.checked)}
+              checked={settings.expandAllComponents}
+              onChange={(e) => onSettingsChange(s => ({ ...s, expandAllComponents: e.target.checked }))}
               className="w-3 h-3 text-vivid-purple bg-charcoal-light border-soft-gray rounded focus:ring-vivid-purple focus:ring-2"
               disabled={disabled}
             />

@@ -107,15 +107,9 @@ export function QuickGenerateMode() {
           )}
 
           <QuickGenerateSettings
-            includeMetadata={generate.settings.includeMetadata}
-            inferEdgeCases={generate.settings.inferEdgeCases}
-            includeAdvancedCriteria={generate.settings.includeAdvancedCriteria}
-            expandAllComponents={generate.settings.expandAllComponents}
+            settings={generate.settings}
             disabled={inputMode === 'text' ? generate.isLoading : designUpload.isProcessingFile}
-            onIncludeMetadataChange={(v) => generate.setSettings(s => ({ ...s, includeMetadata: v }))}
-            onInferEdgeCasesChange={(v) => generate.setSettings(s => ({ ...s, inferEdgeCases: v }))}
-            onIncludeAdvancedCriteriaChange={(v) => generate.setSettings(s => ({ ...s, includeAdvancedCriteria: v }))}
-            onExpandAllComponentsChange={(v) => generate.setSettings(s => ({ ...s, expandAllComponents: v }))}
+            onSettingsChange={generate.setSettings}
           />
 
           {inputMode === 'text' ? (

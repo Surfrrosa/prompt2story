@@ -2,30 +2,7 @@ import { AgentCard } from './AgentCard'
 import { HandoffMessage } from './HandoffMessage'
 import type { AgentRole, AgentState, HandoffEvent } from '@/hooks/useStoryRoom'
 import { PIPELINE_ORDER } from '@/hooks/useStoryRoom'
-
-// Agent display config (inlined to avoid cross-package imports)
-const AGENT_CONFIG: Record<AgentRole, { title: string; tagline: string }> = {
-  'requirements-analyst': {
-    title: 'The Product Owner',
-    tagline: 'Has opinions. All of them are priorities.',
-  },
-  'story-architect': {
-    title: 'The Tech Lead',
-    tagline: 'Sees dependencies you didn\'t know existed.',
-  },
-  'story-writer': {
-    title: 'The Developer',
-    tagline: 'Will ask what "simple" means until you cry.',
-  },
-  'devils-advocate': {
-    title: 'The QA Engineer',
-    tagline: 'Gets paid to break things. Would do it for free.',
-  },
-  'refinement-agent': {
-    title: 'The Scrum Master',
-    tagline: 'Facilitates. Mediates. Takes the minutes nobody reads.',
-  },
-}
+import { AGENT_CONFIG } from '@/config/agents'
 
 interface AgentCardStackProps {
   agents: Record<AgentRole, AgentState>

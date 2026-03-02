@@ -2,15 +2,7 @@ import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import type { AgentRole, AgentState } from '@/hooks/useStoryRoom'
 import { PIPELINE_ORDER } from '@/hooks/useStoryRoom'
-
-// Agent titles (duplicated from registry to avoid cross-package imports)
-const AGENT_TITLES: Record<AgentRole, string> = {
-  'requirements-analyst': 'PO',
-  'story-architect': 'Tech Lead',
-  'story-writer': 'Dev',
-  'devils-advocate': 'QA',
-  'refinement-agent': 'SM',
-}
+import { AGENT_TITLES } from '@/config/agents'
 
 // Deadpan status messages that rotate during the initial wait
 const WAITING_MESSAGES = [
